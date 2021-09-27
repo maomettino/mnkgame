@@ -27,7 +27,7 @@ public class SaddamHussein implements MNKPlayer {
 	public MNKCell selectCell(MNKCell[] FC, MNKCell[] MC) {
 		MNKCell c;
 		return c;
-	}
+	} 
 
 	public String playerName() {
 		return "SaddamHussein";
