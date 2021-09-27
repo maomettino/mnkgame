@@ -25,6 +25,8 @@ public class SaddamHussein implements MNKPlayer {
 		TIMEOUT = timeout_in_secs;
 	}
 	public MNKCell selectCell(MNKCell[] FC, MNKCell[] MC) {
+		MNKCell c;
+		return c;
 	}
 
 	public String playerName() {
