@@ -31,5 +31,4 @@ MNKPlayerTester application:
 
 	java -cp ".." mnkgame.MNKPlayerTester 5 5 4 mnkgame.RandomPlayer mnkgame.QuasiRandomPlayer -v -t 1 -r 10
 
--To use our player just put mnkgame.SaddamHussein instead of RandomPlayer or QuasiRandomPlayer in any
-of the previous scripts
+-To use our player just put mnkgame.SaddamHussein instead of RandomPlayer or QuasiRandomPlayer in any of the previous scripts
