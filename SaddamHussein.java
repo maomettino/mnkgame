@@ -1,6 +1,5 @@
 package mnkgame;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 import java.util.Random;
 
 public class SaddamHussein implements MNKPlayer {
@@ -9,10 +8,10 @@ public class SaddamHussein implements MNKPlayer {
 	private MNKGameState myWin;
 	private MNKGameState yourWin;
 	private int TIMEOUT;
-	private List<Integer> myM = new ArrayList<Integer>();
-	private List<Integer> myN = new ArrayList<Integer>();
-	private List<Integer> foeM = new ArrayList<Integer>();
-	private List<Integer> foeN = new ArrayList<Integer>();
+	private int myM[]; 
+	private int myN[];
+	private int foeM[];
+	private int foeN[];
 	/**
 	 * Default empty constructor
 	 */
@@ -27,28 +26,23 @@ public class SaddamHussein implements MNKPlayer {
 		myWin   = first ? MNKGameState.WINP1 : MNKGameState.WINP2; 
 		yourWin = first ? MNKGameState.WINP2 : MNKGameState.WINP1;
 		TIMEOUT = timeout_in_secs;
-		int i;
-		for(i=0;i< M ; i++) {
-			myM.add(0);
-			foeM.add(0);
-		}
-		for(i=0;i< M ; i++) {
-			myN.add(0);
-			foeN.add(0);
-		}
+		myM = new int[M];
+		myN = new int[N];
+		foeM = new int[M];
+		foeN = new int[N];
 	}
 	public MNKCell selectCell(MNKCell[] FC, MNKCell[] MC) {
 		if(MC.length>0) {
 			MNKCell cell = MC[MC.length-1];
-			foeM.set(cell.i,foeM.get(cell.i)+1);
-			foeN.set(cell.j,foeN.get(cell.j)+1);
+			foeM[cell.i]++;
+			foeN[cell.j]++;
 		}
-		myM.set(FC[0].i,myM.get(FC[0].i)+1); 
-		myN.set(FC[0].j,myN.get(FC[0].j)+1);
-		System.out.println("myM "+myM);
-		System.out.println("myN "+myN);
-		System.out.println("foeM "+foeM);
-		System.out.println("foeN "+foeN);
+		myM[FC[0].i]++; 
+		myN[FC[0].j]++;
+		System.out.println("myM "+Arrays.toString(myM));
+		System.out.println("myN "+Arrays.toString(myN));
+		System.out.println("foeM "+Arrays.toString(foeM));
+		System.out.println("foeN "+Arrays.toString(foeN));
 		return FC[0];
 	} 
 
