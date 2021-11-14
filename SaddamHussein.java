@@ -5,13 +5,11 @@ import java.util.Random;
 public class SaddamHussein implements MNKPlayer {
 	private Random rand;
 	private MNKBoard B;
-	private MNKGameState myWin;
-	private MNKGameState yourWin;
-	private int TIMEOUT;
-	private int myM[]; 
-	private int myN[];
-	private int foeM[];
-	private int foeN[];
+	private Direction direction;
+	private ChainState chain_state;
+	private int m,n,k, chain_length;
+	MNKCell knot_cell;
+	int turn;
 	/**
 	 * Default empty constructor
 	 */
@@ -23,29 +21,31 @@ public class SaddamHussein implements MNKPlayer {
 		// New random seed for each game
 		rand    = new Random(System.currentTimeMillis()); 
 		B       = new MNKBoard(M,N,K);
-		myWin   = first ? MNKGameState.WINP1 : MNKGameState.WINP2; 
-		yourWin = first ? MNKGameState.WINP2 : MNKGameState.WINP1;
-		TIMEOUT = timeout_in_secs;
-		myM = new int[M];
-		myN = new int[N];
-		foeM = new int[M];
-		foeN = new int[N];
+		m=M;
+		n=N;
+		k=K;
+		chain_length = 0;
+		turn=0;
 	}
 	public MNKCell selectCell(MNKCell[] FC, MNKCell[] MC) {
 		if(MC.length>0) {
-			MNKCell cell = MC[MC.length-1];
-			foeM[cell.i]++;
-			foeN[cell.j]++;
+			MNKCell c = MC[MC.length-1]; // Recover the last move from MC
+			B.markCell(c.i,c.j);         // Save the last move in the local MNKBoard
 		}
-		myM[FC[0].i]++; 
-		myN[FC[0].j]++;
-		System.out.println("myM "+Arrays.toString(myM));
-		System.out.println("myN "+Arrays.toString(myN));
-		System.out.println("foeM "+Arrays.toString(foeM));
-		System.out.println("foeN "+Arrays.toString(foeN));
+		B.markCell(FC[0].i,FC[0].j);
+		printMatrix(B.B);
 		return FC[0];
 	} 
 
+	private void printMatrix(MNKCellState[][] matrix) {
+		turn++;
+		System.out.println("turno: "+turn);
+		Arrays.stream(matrix).forEach((row) -> {
+		  System.out.print("[");
+		  Arrays.stream(row).forEach((el) -> System.out.print(" " + el + " "));
+		  System.out.println("]");
+		});
+	  }
 	public String playerName() {
 		return "SaddamHussein";
 	}
