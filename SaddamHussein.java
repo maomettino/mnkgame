@@ -4,12 +4,26 @@ import java.util.Arrays;
 import java.util.Random;
 
 import mnkgame.ChainState;
+import mnkgame.Direction;
 import mnkgame.MNKCell;
+import mnkgame.MNKCellState;
+import mnkgame.MNKGameState;
+
 
 public class SaddamHussein implements MNKPlayer {
+	private final int MAX_DEPTH = 5; //the max depth that the beta pruning will analyze
+	private int[][] direction = { 	
+		{-1,0}, //up
+		{-1,1},	//up-right
+		{0,1},	//right
+		{1,1},	//down-right
+		{1,0},	//down
+		{1,-1},	//down-left
+		{0,-1},	//left
+		{-1,-1}, //up-left
+	};
 	private Random rand;
 	private MNKBoard B;
-	private Direction direction;
 	private ChainState chain_state;
 	private int m, n, k, chain_length;
 	MNKCell knot_cell;
@@ -39,9 +53,32 @@ public class SaddamHussein implements MNKPlayer {
 		if (chain_state != ChainState.nochain) { // it's not my first move
 			MNKCell foe_cell = MC[MC.length - 1]; // Recover the last move from MC
 			B.markCell(foe_cell.i, foe_cell.j); // Save the last move of the opponent in the local MNKBoard
-			MNKCell last_move = MC[MC.length - 2]; // Save my last move in the local MNKBoard
-
-			B.markCell(FC[0].i, FC[0].j);
+			MNKCell last_cell = MC[MC.length - 2]; // Save my last move in the local MNKBoard
+			int lastI = last_cell.i;
+			int lastJ = last_cell.j;
+			for (int[] dir : direction)
+			{
+				try {
+					if( B.B[lastI + dir[0]][lastJ + dir[1]] == MNKCellState.FREE) {
+						MNKGameState gamestate = B.markCell(lastI + dir[0], lastJ + dir[1]);
+						if(gamestate==MNKGameState.WINP1 || gamestate==MNKGameState.WINP2) //i win with this move
+							return new MNKCell(lastI + dir[0], lastJ + dir[1]);
+						else 
+							B.unmarkCell();
+					}
+					else {
+					//check if the cell is marked by me, if so
+					//keep going through current direction until you come
+					//a cross an enemy cell or a free cell
+					//in the latter case check the cell ans check if you win
+					}
+				}
+				catch (IndexOutOfBoundsException e) {
+					System.out.println("IndexOutOfBoundsException exception caught, skip to next directionò");
+					continue;
+				}		
+			} 
+					
 			printMatrix(B.B);
 			return FC[0];
 		}
@@ -52,7 +89,7 @@ public class SaddamHussein implements MNKPlayer {
 				MNKCell foe_cell = MC[MC.length - 1]; // Recover the last move from MC
 				B.markCell(foe_cell.i, foe_cell.j); // Save the last move in the local MNKBoard
 			}
-			B.markCell(FC[0].i, FC[0].j);
+			B.markCell(FC[0].i, FC[0].j); //TODO centrare la prima mossa
 			printMatrix(B.B);
 			return FC[0];
 		}
