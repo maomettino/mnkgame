@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
-public class SaddamHussein extends P implements MNKPlayer  {
+public class SaddamHussein extends P implements MNKPlayer {
 	// TODO: handle time with timer, threads or whatever
 	// TODO: look-up and perhaps use junit for unit testing
 	// TODO: reycle previously computed stuff in beta-pruning if possible
@@ -42,9 +42,15 @@ public class SaddamHussein extends P implements MNKPlayer  {
 				return FC[0];
 			MNKCell myLastCell = MC[MC.length - 2];
 			MNKCell foeCell = MC[MC.length - 1];
+			P.myMoves++;
+			P.foeMoves++;
 			// making the local board up-to-date
 			P.b[myLastCell.i][myLastCell.j] = P.me;
 			P.b[foeCell.i][foeCell.j] = P.foe;
+			// here goes the beta-pruning algorithm
+			List<MNKCell> list = Arrays.asList(FC);
+			ArrayList<MNKCell> moves = new ArrayList<MNKCell>(list);
+			return abp.getMove(moves, myLastCell, foeCell);
 		}
 		// When it's my first turn
 		else {
@@ -52,10 +58,12 @@ public class SaddamHussein extends P implements MNKPlayer  {
 			if (MC.length > 0) { // if I'm the second player
 				MNKCell foeCell = MC[MC.length - 1]; // Recover the last move from MC
 				P.b[foeCell.i][foeCell.j] = P.foe;
+				P.foeMoves++;
 			}
+			P.myMoves++;
+			return FC[0];
 		}
-		// here goes the beta-pruning algorithm
-		return FC[0];
+
 	}
 
 	public String playerName() {

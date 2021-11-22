@@ -9,4 +9,5 @@ public class P {
     static protected int turn;
     static protected MNKCellState me;
 	static protected MNKCellState foe;
+    static protected int myMoves=0, foeMoves=0;
 }

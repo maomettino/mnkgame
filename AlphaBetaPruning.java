@@ -1,5 +1,10 @@
 package mnkgame;
 import java.util.ArrayList;
+import java.util.Arrays;
+import javax.swing.text.html.FormView;
+
+import mnkgame.MNKCell;
+import mnkgame.MNKCellState;
 public class AlphaBetaPruning extends P {
     private final int[][] DIRECTION = { { -1, 0 }, // up
 			{ -1, 1 }, // up-right
@@ -13,114 +18,131 @@ public class AlphaBetaPruning extends P {
 	private final int MAX_DEPTH = 5; 
     private final int ALPHA = -1000;
     private final int BETA = 1000;
+	//the level of the current father
     private int currentDepth;
-    private boolean gameover;
+    private boolean iWin;
+	private boolean foeWins;
     private MNKCell bestMove;
     /** @param b local board to do stuff without touching the actual board
      */
     private MNKCellState[][] b;
-    
     public AlphaBetaPruning() {
-        gameover = false;
-        currentDepth = 0;
+        iWin = false;
+		foeWins = false;
+        currentDepth = -1;
     }
 
-    public MNKCell getMove(MNKCell[] possibleMoves, MNKCell myLastMove, MNKCell foeLastMove) {
-        //initially the best move is just a random move
-        bestMove = possibleMoves[0];
+    public MNKCell getMove(ArrayList<MNKCell> possibleMoves, MNKCell myLastMove, MNKCell foeLastMove) {
+		//initially the best move is just a random move
+        bestMove = possibleMoves.get(0);
+
         //make sure that local board matches the global one
         b = P.b;
-        alphaBetaPruning(possibleMoves, foeLastMove, myLastMove, true, ALPHA, BETA);
-        return bestMove;
+		currentDepth = -1;
+        alphaBetaPruning(possibleMoves, foeLastMove, myLastMove, true, ALPHA, BETA);  
+		return bestMove;
     }
 
-	private int alphaBetaPruning(MNKCell[] possibleMoves, MNKCell foeLastMove, MNKCell myLastMove, Boolean maximizingPlayer, int alpha, int beta) {
-		// the moves array is already ordered, so we pick up the first move,
-		// then the second and so on inside the for
-		// i have another terminating condition which occurs when the move
-		// of the current node ends the game somehow, to do so
-		// i must keep track of all the moves made in a root-leaf path in a copy
-		// of the local board
-        ArrayList<MNKCell> moves = orderMoves(possibleMoves, myLastMove, foeLastMove);
-        //now the best move is the one provided by the heuristic algorithm
-		bestMove = moves.get(0);
-		if(gameover) {
-			gameover = false;
-			return maximizingPlayer?BETA:ALPHA;
-		}
-		// Terminating condition. i.e
+	private int alphaBetaPruning(ArrayList<MNKCell> possibleMoves, MNKCell foeLastMove, MNKCell myLastMove, Boolean maximizingPlayer, int alpha, int beta) {
+		currentDepth++;
+
 		// leaf node is reached
 		if (currentDepth == MAX_DEPTH) {
+			currentDepth--;
 			// heuristic value for the node get_heuristic_value(moves[0])
 			return 0;
 		}
+		ArrayList<MNKCell> moves = orderMoves(possibleMoves, myLastMove, foeLastMove);
+        //now the best move is the one provided by the heuristic algorithm
+		if(currentDepth==0) {
+			bestMove = moves.get(0);
+		}
+			
+		if(iWin) {
+			iWin = false;
+			currentDepth--;
+			return maximizingPlayer?BETA:ALPHA;
+		}
+		else if(foeWins) {
+			foeWins = false;
+			currentDepth--;
+			return maximizingPlayer?BETA:ALPHA;
+		}
 
 		if (maximizingPlayer) {
-			int best = ALPHA;
+			int best = ALPHA,i;
 
-			// Recur for left and
-			// right children
-			// this will be more likely a foreach through moves
-			for (int i = 0; i < moves.size(); i++) {
-				// remove the marked move from moves before the recursive call
-				int val = 0;// beta_pruning(depth + 1, nodeIndex * 2 + i, false, moves, alpha, beta);
+			//dfs for the tree rooted in each move
+			for(i=0;i<8;i++){				
+				//remove the current move from avaiable moves list before the recursive call	
+				MNKCell move = moves.remove(i);
+
+				//mark current move
+				b[move.i][move.j]=P.me;
+				int val = alphaBetaPruning(moves,foeLastMove,move,false,alpha,beta);
+				b[move.i][move.j]=MNKCellState.FREE;
+				moves.add(i,move);
 				best = Math.max(best, val);
 				alpha = Math.max(alpha, best);
 
 				// Alpha Beta Pruning
+				//System.out.println("alpha "+alpha+ " beta "+beta);
 				if (beta <= alpha) {
-                    //bestMove = current move
+                    if(currentDepth == 1)
+						bestMove = move;
+					System.out.println("CUTOFF PER SADDAM HUSSEIN");
                     break;
                 }
-					
 			}
-            //must return the cell with the best score
 			return best;
 		} else {
-			int best = BETA;
+			//same stuff but from foe's pov
+			int best = BETA,i;
+			for(i=0;i<8;i++){
+				//remove the current move from avaiable moves list before the recursive call	
+				MNKCell move = moves.remove(i);
 
-			// Recur for left and
-			// right children
-
-			for (int i = 0; i < 2; i++) {
-
-				int val = 0;// beta_pruning(depth + 1, nodeIndex * 2 + i, true, moves, alpha, beta);
+				//mark current move
+				b[move.i][move.j]=P.foe;
+				int val = alphaBetaPruning(moves,move,myLastMove,true,alpha,beta);
+				b[move.i][move.j]=MNKCellState.FREE;
+				moves.add(i,move);
 				best = Math.min(best, val);
 				beta = Math.min(beta, best);
-
+				//System.out.println("alpha "+alpha+ "beta "+beta);
 				// Alpha Beta Pruning
-				if (beta <= alpha)
+				if (beta <= alpha) {
+					System.out.println("CUTOFF PER IL NEMICO");
 					break;
+				}
+					
 			}
+			currentDepth--;
 			return best;
 		}
 	}
   
-	private ArrayList<MNKCell> orderMoves(MNKCell[] possibleMoves,MNKCell myLastMove, MNKCell foeLastMove) {
-		ArrayList<MNKCell> moves = new ArrayList<MNKCell>();
+	private ArrayList<MNKCell> orderMoves(ArrayList<MNKCell> moves,MNKCell myLastMove, MNKCell foeLastMove) {
 		// check if i can win in one move
-		if (P.turn >= P.k) {
+		if (P.myMoves >= P.k-1) {
 			int result[] = findWinningMove(myLastMove);
 			if (result[0] != -1) {
-				moves.add(new MNKCell(result[0], result[1]));
 				//i need to tell beta-pruning that the game is over
-				gameover = true;
+				iWin = true;
+				moves.add(0,new MNKCell(result[0], result[1]));
 				return moves;
 			}
 		}
 		// check if the foe can win in one move
-		//is it worth it?
-		int foeMoves = ( (P.m*P.n)- possibleMoves.length) - P.turn + 1;
-		if (foeMoves >= P.k - 1) {
-			System.out.println("checking foe's moves...");
+		if (P.foeMoves >= P.k -1) {
 			int result[] = findWinningMove(foeLastMove);
-			if (result[0] != -1) { // i found a winning move
-				moves.add(new MNKCell(result[0], result[1]));
+			if (result[0] != -1) {//i found a winning move
+				foeWins = true;
+				moves.add(0,new MNKCell(result[0], result[1]));
 				return moves;
-			}
-			System.out.println("no danger for now");
+			}			
 		}
-		// order moves according to heuristic
+		//order moves according to heuristic assuming no winning move for anyone
 		return moves;
 	}
 
@@ -129,11 +151,11 @@ public class AlphaBetaPruning extends P {
 	// IsWinningCell is O(8(k-1)), which means that checking each move
 	// is more efficient as long as they are less than 9
 	// the issue is that we don't know how many moves we will evaluate
-	// so for now we just use IsWinningCell each time and in some
-	// specific occasions we may prefer findWinningMove
+	// so for now we use findWinningMove since its already implemented
+	//inside the heuristic and we work so hard for it
 	private int[] findWinningMove(MNKCell move) {
 		for (int[] DIR : DIRECTION) {
-			int result[] = checkDirection(move.i, move.j, DIR, move.state);
+			int result[] = checkDirection(move.i, move.j, DIR, b[move.i][move.j] );//move.state
 			if (result[0] != -1) // i found a winning move
 				return new int[] { result[0], result[1] };
 		}
@@ -205,5 +227,13 @@ public class AlphaBetaPruning extends P {
 			return true;
 
 		return false;
+	}
+
+	private void printMatrix(MNKCellState[][] matrix) {
+		Arrays.stream(matrix).forEach((row) -> {
+			System.out.print("[");
+			Arrays.stream(row).forEach((el) -> System.out.print(" " + el + " "));
+			System.out.println("]");
+		});
 	}
 }
