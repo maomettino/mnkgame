@@ -1,6 +1,6 @@
 package mnkgame;
 /**
- * Parameters
+ * shared parameters between Saddam and alphaBetaPruning
  */
 
 public class P {

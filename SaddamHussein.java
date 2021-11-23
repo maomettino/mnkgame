@@ -9,7 +9,6 @@ public class SaddamHussein extends P implements MNKPlayer {
 	// TODO: handle time with timer, threads or whatever
 	// TODO: look-up and perhaps use junit for unit testing
 	// TODO: reycle previously computed stuff in beta-pruning if possible
-	private ChainState chainState;
 	private AlphaBetaPruning abp;
 
 	/**
@@ -27,7 +26,6 @@ public class SaddamHussein extends P implements MNKPlayer {
 		P.n = N;
 		P.k = K;
 		P.turn = 0;
-		chainState = ChainState.nochain;
 		P.me = first ? MNKCellState.P1 : MNKCellState.P2;
 		P.foe = first ? MNKCellState.P2 : MNKCellState.P1;
 		abp = new AlphaBetaPruning();
@@ -36,8 +34,7 @@ public class SaddamHussein extends P implements MNKPlayer {
 	public MNKCell selectCell(MNKCell[] FC, MNKCell[] MC) {
 		P.turn++;
 		System.out.println("turno: " + P.turn);
-		// When it's not my first turn
-		if (chainState != ChainState.nochain) {
+		if (turn > 1) {
 			if (FC.length == 1)
 				return FC[0];
 			MNKCell myLastCell = MC[MC.length - 2];
@@ -50,11 +47,13 @@ public class SaddamHussein extends P implements MNKPlayer {
 			// here goes the beta-pruning algorithm
 			List<MNKCell> list = Arrays.asList(FC);
 			ArrayList<MNKCell> moves = new ArrayList<MNKCell>(list);
-			return abp.getMove(moves, myLastCell, foeCell);
+			abp.getMove(moves, myLastCell, foeCell);
+			int[] a = abp.checkMoveAround(foeCell,P.foe);
+			System.out.println("horizontal length"+a[0]+" back "+a[1]+" forward "+a[2]);
+			return FC[0];//abp.getMove(moves, myLastCell, foeCell);
 		}
 		// When it's my first turn
 		else {
-			chainState = ChainState.newborn;
 			if (MC.length > 0) { // if I'm the second player
 				MNKCell foeCell = MC[MC.length - 1]; // Recover the last move from MC
 				P.b[foeCell.i][foeCell.j] = P.foe;
