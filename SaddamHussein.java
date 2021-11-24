@@ -45,11 +45,9 @@ public class SaddamHussein extends P implements MNKPlayer {
 			P.b[myLastCell.i][myLastCell.j] = P.me;
 			P.b[foeCell.i][foeCell.j] = P.foe;
 			// here goes the beta-pruning algorithm
-			List<MNKCell> list = Arrays.asList(FC);
-			ArrayList<MNKCell> moves = new ArrayList<MNKCell>(list);
-			abp.getMove(moves, myLastCell, foeCell);
-			int[] a = abp.findBestMoves(foeCell,P.foe);
-			System.out.println("horizontal length"+a[0]+" back "+a[1]+" forward "+a[2]);
+			abp.getMove(myLastCell, foeCell);
+			//int[] a = abp.findBestMoves(foeCell,P.foe);
+			//System.out.println("horizontal length"+a[0]+" back "+a[1]+" forward "+a[2]);
 			return FC[0];//abp.getMove(moves, myLastCell, foeCell);
 		}
 		// When it's my first turn

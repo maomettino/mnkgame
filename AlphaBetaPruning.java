@@ -39,19 +39,16 @@ public class AlphaBetaPruning extends P {
 		currentDepth = -1;
 	}
 
-	public MNKCell getMove(ArrayList<MNKCell> possibleMoves, MNKCell myLastMove, MNKCell foeLastMove) {
-		// initially the best move is just a random move
-		bestMove = possibleMoves.get(0);
-
+	public MNKCell getMove(MNKCell myLastMove, MNKCell foeLastMove) {
 		// make sure that local board matches the global one
 		b = P.b;
 		currentDepth = -1;
-		alphaBetaPruning(possibleMoves, foeLastMove, myLastMove, true, ALPHA, BETA);
+		findBestMoves(foeLastMove, P.foe);
+		//alphaBetaPruning(foeLastMove, myLastMove, true, ALPHA, BETA);
 		return bestMove;
 	}
 
-	private int alphaBetaPruning(ArrayList<MNKCell> possibleMoves, MNKCell foeLastMove, MNKCell myLastMove,
-			Boolean maximizingPlayer, int alpha, int beta) {
+	private int alphaBetaPruning(MNKCell foeLastMove, MNKCell myLastMove, Boolean maximizingPlayer, int alpha, int beta) {
 		currentDepth++;
 
 		// leaf node is reached
@@ -60,10 +57,10 @@ public class AlphaBetaPruning extends P {
 			// heuristic value for the node get_heuristic_value(moves[0])
 			return 0;
 		}
-		ArrayList<MNKCell> moves ;//= findBestMoves(myLastMove, maximizingPlayer?P.me:P.foe);
+		MNKCell[] moves = findBestMoves(myLastMove, maximizingPlayer?P.me:P.foe);
 		// now the best move is the one provided by the heuristic algorithm
 		if (currentDepth == 0) {
-			bestMove = moves.get(0);
+			bestMove = moves[0];
 		}
 
 		if (iWin) {
@@ -81,14 +78,12 @@ public class AlphaBetaPruning extends P {
 
 			// dfs for the tree rooted in each move
 			for (i = 0; i < 8; i++) {
-				// remove the current move from avaiable moves list before the recursive call
-				MNKCell move = moves.remove(i);
+				MNKCell move = moves[i];
 
 				// mark current move
 				b[move.i][move.j] = P.me;
-				int val = alphaBetaPruning(moves, foeLastMove, move, false, alpha, beta);
+				int val = alphaBetaPruning(foeLastMove, move, false, alpha, beta);
 				b[move.i][move.j] = MNKCellState.FREE;
-				moves.add(i, move);
 				best = Math.max(best, val);
 				alpha = Math.max(alpha, best);
 
@@ -106,14 +101,12 @@ public class AlphaBetaPruning extends P {
 			// same stuff but from foe's pov
 			int best = BETA, i;
 			for (i = 0; i < 8; i++) {
-				// remove the current move from avaiable moves list before the recursive call
-				MNKCell move = moves.remove(i);
+				MNKCell move = moves[i];
 
 				// mark current move
 				b[move.i][move.j] = P.foe;
-				int val = alphaBetaPruning(moves, move, myLastMove, true, alpha, beta);
+				int val = alphaBetaPruning(move, myLastMove, true, alpha, beta);
 				b[move.i][move.j] = MNKCellState.FREE;
-				moves.add(i, move);
 				best = Math.min(best, val);
 				beta = Math.min(beta, best);
 				// System.out.println("alpha "+alpha+ "beta "+beta);
@@ -133,7 +126,7 @@ public class AlphaBetaPruning extends P {
 	// forward and backward and k-1 for jump
 	// may be optimized breaking when length + extra + jump cell =k, in this case
 	// O(4(k))
-	public int[] findBestMoves(MNKCell cell, MNKCellState player) {
+	public MNKCell[] findBestMoves(MNKCell cell, MNKCellState player) {
 		int i = cell.i;
 		int j = cell.j;
 		// around for each axis
@@ -141,7 +134,6 @@ public class AlphaBetaPruning extends P {
 		int length = 1, backExtra = 0, forwardExtra = 0, backCount, forwardCount;
 
 		// Horizontal check
-
 		// backward check
 		for (backCount = 1; j - backCount >= 0 && b[i][j - backCount] == player; backCount++)
 			length++;
@@ -153,37 +145,152 @@ public class AlphaBetaPruning extends P {
 		// back jump and extra chain check
 		if (j - backCount >= 0 && b[i][j - backCount] == MNKCellState.FREE) {
 			if (length == P.k - 1) {
-				System.out.println("diocane");
+				System.out.println("diocane H ");
 			}
 			int rest = P.k - length - 1;
 			for (int c = 1; j - backCount - c >= 0 && b[i][j - backCount - c] == player
 					&& c<= rest;c++)
 				backExtra++;
 			if (length + backExtra >= P.k - 1) {
-				System.out.println("diocane al quadrato");
+				System.out.println("diocane al quadrato H");
 			}
 		}
 
 		// forward jump and extra chain check
 		if (j + forwardCount < n && b[i][j + forwardCount] == MNKCellState.FREE) {
 			if (length == P.k - 1) {
-				System.out.println("diocane");
+				System.out.println("diocane H");
 			}
 			int rest = P.k - length - 1;
 			for (int c = 1; j + forwardCount + c < n && b[i][j + forwardCount + c] == player
 					&& c <= rest; c++)
 				forwardExtra++;
 			if (length + forwardExtra >= P.k - 1) {
-				System.out.println("diocane al quadrato");
+				System.out.println("diocane al quadrato H");
 			}
 		}
-		// if i have a jump in both directions then the chain is the longest between the
-		// two, otherwise it's the sum of the three of them
 		totalH = length + Math.max(backExtra, forwardExtra);
-		return new int[] { length, backExtra, forwardExtra };
+		length = 1; backExtra = 0; forwardExtra = 0;
 
+		// Vertical check
+		// backward check
+		for (backCount = 1; i - backCount >= 0 && b[i- backCount][j] == player; backCount++)
+			length++;
+
+		// forward check
+		for (forwardCount = 1; i + forwardCount < n && b[i+ forwardCount][j] == player; forwardCount++)
+			length++;
+
+		// back jump and extra chain check
+		if (i - backCount >= 0 && b[i- backCount][j] == MNKCellState.FREE) {
+			if (length == P.k - 1) {
+				System.out.println("diocane V");
+			}
+			int rest = P.k - length - 1;
+			for (int c = 1; i - backCount - c >= 0 && b[i - backCount - c][j] == player
+					&& c<= rest;c++)
+				backExtra++;
+			if (length + backExtra >= P.k - 1) {
+				System.out.println("diocane al quadrato V");
+			}
+		}
+
+		// forward jump and extra chain check
+		if (i + forwardCount < n && b[i + forwardCount][j] == MNKCellState.FREE) {
+			if (length == P.k - 1) {
+				System.out.println("diocane V");
+			}
+			int rest = P.k - length - 1;
+			for (int c = 1; i + forwardCount + c < n && b[i + forwardCount + c][j] == player
+					&& c <= rest; c++)
+				forwardExtra++;
+			if (length + forwardExtra >= P.k - 1) {
+				System.out.println("diocane al quadrato V");
+			}
+		}
+		totalV = length + Math.max(backExtra, forwardExtra);
+		length = 1; backExtra = 0; forwardExtra = 0;
+
+		// Diagonal check
+		// backward check
+		for (backCount = 1; j - backCount >= 0 && i - backCount >= 0 && b[i - backCount][j - backCount] == player; backCount++)
+			length++;
+
+		// forward check
+		for (forwardCount = 1; j + forwardCount <n && i + forwardCount < n && b[i + forwardCount][j + forwardCount] == player; forwardCount++)
+			length++;
+
+		// back jump and extra chain check
+		if (j - backCount >= 0 && i - backCount >= 0 && b[i - backCount][j - backCount] == MNKCellState.FREE) {
+			if (length == P.k - 1) {
+				System.out.println("diocane D");
+			}
+			int rest = P.k - length - 1;
+			for (int c = 1; j - backCount - c >= 0 && i - backCount - c >= 0 && b[i - backCount - c][j - backCount - c] == player
+					&& c<= rest;c++)
+				backExtra++;
+			if (length + backExtra >= P.k - 1) {
+				System.out.println("diocane al quadrato D");
+			}
+		}
+
+		// forward jump and extra chain check
+		if (j + forwardCount < n && i + forwardCount < n && b[i + forwardCount][j + forwardCount] == MNKCellState.FREE) {
+			if (length == P.k - 1) {
+				System.out.println("diocane D");
+			}
+			int rest = P.k - length - 1;
+			for (int c = 1; j + forwardCount + c < n && i + forwardCount + c < n && b[i + forwardCount + c][j + forwardCount + c] == player
+					&& c <= rest; c++)
+				forwardExtra++;
+			if (length + forwardExtra >= P.k - 1) {
+				System.out.println("diocane al quadrato D");
+			}
+		}
+		totalH = length + Math.max(backExtra, forwardExtra);
+		length = 1; backExtra = 0; forwardExtra = 0;
+
+		// Antidiagonal check
+		// backward check
+		for (backCount = 1; j + backCount < n && i - backCount >= 0 && b[i - backCount][j + backCount] == player; backCount++)
+			length++;
+
+		// forward check
+		for (forwardCount = 1; j - forwardCount >= 0 && i + forwardCount < n && b[i + forwardCount][j - forwardCount] == player; forwardCount++)
+			length++;
+
+		// back jump and extra chain check
+		if (j + backCount <n && i - backCount >= 0 && b[i - backCount][j + backCount] == MNKCellState.FREE) {
+			if (length == P.k - 1) {
+				System.out.println("diocane AD");
+			}
+			int rest = P.k - length - 1;
+			for (int c = 1; j + backCount + c <n && i - backCount - c >= 0 && b[i - backCount - c][j + backCount + c] == player
+					&& c<= rest;c++)
+				backExtra++;
+			if (length + backExtra >= P.k - 1) {
+				System.out.println("diocane al quadrato AD");
+			}
+		}
+
+		// forward jump and extra chain check
+		if (j - forwardCount >=0 && i + forwardCount < n && b[i + forwardCount][j - forwardCount] == MNKCellState.FREE) {
+			if (length == P.k - 1) {
+				System.out.println("diocane AD");
+			}
+			int rest = P.k - length - 1;
+			for (int c = 1; j - forwardCount - c >=0 && i + forwardCount + c < n && b[i + forwardCount + c][j - forwardCount - c] == player
+					&& c <= rest; c++)
+				forwardExtra++;
+			if (length + forwardExtra >= P.k - 1) {
+				System.out.println("diocane al quadrato AD");
+			}
+		}
+		totalH = length + Math.max(backExtra, forwardExtra);
+		length = 1; backExtra = 0; forwardExtra = 0;
+		return new MNKCell[] {new MNKCell(cell.i, cell.j)};
 		// reset values for the next axis
-		// length = 1; backExtra = 0; forwardExtra = 0;
+		
 	}
 
 	/*
