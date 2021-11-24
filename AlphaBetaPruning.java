@@ -60,7 +60,7 @@ public class AlphaBetaPruning extends P {
 			// heuristic value for the node get_heuristic_value(moves[0])
 			return 0;
 		}
-		ArrayList<MNKCell> moves = orderMoves(possibleMoves, myLastMove, foeLastMove);
+		ArrayList<MNKCell> moves ;//= findBestMoves(myLastMove, maximizingPlayer?P.me:P.foe);
 		// now the best move is the one provided by the heuristic algorithm
 		if (currentDepth == 0) {
 			bestMove = moves.get(0);
@@ -97,7 +97,7 @@ public class AlphaBetaPruning extends P {
 				if (beta <= alpha) {
 					if (currentDepth == 1)
 						bestMove = move;
-					//System.out.println("CUTOFF PER SADDAM HUSSEIN");
+					// System.out.println("CUTOFF PER SADDAM HUSSEIN");
 					break;
 				}
 			}
@@ -119,7 +119,7 @@ public class AlphaBetaPruning extends P {
 				// System.out.println("alpha "+alpha+ "beta "+beta);
 				// Alpha Beta Pruning
 				if (beta <= alpha) {
-					//System.out.println("CUTOFF PER IL NEMICO");
+					// System.out.println("CUTOFF PER IL NEMICO");
 					break;
 				}
 
@@ -129,56 +129,61 @@ public class AlphaBetaPruning extends P {
 		}
 	}
 
-	private ArrayList<MNKCell> orderMoves(ArrayList<MNKCell> moves, MNKCell myLastMove, MNKCell foeLastMove) {
-		/*
-		 * check if i can win in one move if (P.myMoves >= P.k-1) { int result[] =
-		 * findWinningMove(myLastMove); if (result[0] != -1) { //i need to tell
-		 * beta-pruning that the game is over iWin = true; moves.add(0,new
-		 * MNKCell(result[0], result[1])); return moves; } } // check if the foe can win
-		 * in one move if (P.foeMoves >= P.k -1) { int result[] =
-		 * findWinningMove(foeLastMove); if (result[0] != -1) {//i found a winning move
-		 * foeWins = true; moves.add(0,new MNKCell(result[0], result[1])); return moves;
-		 * } }
-		 */
-		// first implement the generalk solution, then consider optimization
-		// regarding the first/second move, finally find out how and when to contain
-		// foe's expansion by preventing one-win moves and double-opened k-2 chains
-		// in the latter case the foe con mark one end of the chain and then win by
-		// marking one of the two ends, this scenario must be prevented
-			//checkMoveAround(cell, player)
-
-		return moves;
-	}
-//O(4((k-2)+ 2(k-1)))= O(12k-16)=O(12(k-4/3)), 4 axes with k-2 for the around forward and backward and k-1 for jump
-//may be optimized breaking when length + extra + jump cell =k, in this case 
-//O(4(k)), though this isn't an accurate estimate since it assumes that 
-//the length and the extra for have the same cost which is true asymptotically
-//but not actuually since the extra for has one more operation so we would have
-//to count all the basic operations, we won't do that, instead we will treat the, as equal
-	public int[] checkMoveAround(MNKCell cell, MNKCellState player) {
+	// O(4((k-2)+ 2(k-1)))= O(12k-16)=O(12(k-4/3)), 4 axes with k-2 for the around
+	// forward and backward and k-1 for jump
+	// may be optimized breaking when length + extra + jump cell =k, in this case
+	// O(4(k))
+	public int[] findBestMoves(MNKCell cell, MNKCellState player) {
 		int i = cell.i;
 		int j = cell.j;
-		int length = 1, backExtra = 0, forwardExtra = 0,k, total;
+		// around for each axis
+		int totalH, totalV, totalD, totalAD;
+		int length = 1, backExtra = 0, forwardExtra = 0, backCount, forwardCount;
+
 		// Horizontal check
-		for (k = 1; j - k >= 0 && b[i][j - k] == player; k++)
-			length++; // backward check
-		// if the next cell is free there may be a jump
-		if (j - k >= 0 && b[i][j - k] == MNKCellState.FREE) {
-			for (k = k + 1; j - k >= 0 && b[i][j - k] == player && length+backExtra<k; k++)
+
+		// backward check
+		for (backCount = 1; j - backCount >= 0 && b[i][j - backCount] == player; backCount++)
+			length++;
+
+		// forward check
+		for (forwardCount = 1; j + forwardCount < n && b[i][j + forwardCount] == player; forwardCount++)
+			length++;
+
+		// back jump and extra chain check
+		if (j - backCount >= 0 && b[i][j - backCount] == MNKCellState.FREE) {
+			if (length == P.k - 1) {
+				System.out.println("diocane");
+			}
+			int rest = P.k - length - 1;
+			for (int c = 1; j - backCount - c >= 0 && b[i][j - backCount - c] == player
+					&& c<= rest;c++)
 				backExtra++;
+			if (length + backExtra >= P.k - 1) {
+				System.out.println("diocane al quadrato");
+			}
 		}
-		for (k = 1; j + k < n && b[i][j + k] == player; k++)
-			length++; // forward check
-		if (j + k < n && b[i][j + k] == MNKCellState.FREE) {
-			for (k = k + 1; j + k < n && b[i][j + k] == player; k++)
-				forwardExtra++;  
+
+		// forward jump and extra chain check
+		if (j + forwardCount < n && b[i][j + forwardCount] == MNKCellState.FREE) {
+			if (length == P.k - 1) {
+				System.out.println("diocane");
+			}
+			int rest = P.k - length - 1;
+			for (int c = 1; j + forwardCount + c < n && b[i][j + forwardCount + c] == player
+					&& c <= rest; c++)
+				forwardExtra++;
+			if (length + forwardExtra >= P.k - 1) {
+				System.out.println("diocane al quadrato");
+			}
 		}
-		//if i have a jump in both directions then the chain is the longest between the two, otherwise it's the sum of the three of them
-		total = length + ((backExtra > 0 && forwardExtra > 0)? Math.max(backExtra, forwardExtra):backExtra + forwardExtra);
-		//here i can realize if the move is one-winning
-		if(total>=P.k-1)
-			System.out.println("l'umano vince in una mossa con totale"+total);
-		return new int [] {length , backExtra , forwardExtra};
+		// if i have a jump in both directions then the chain is the longest between the
+		// two, otherwise it's the sum of the three of them
+		totalH = length + Math.max(backExtra, forwardExtra);
+		return new int[] { length, backExtra, forwardExtra };
+
+		// reset values for the next axis
+		// length = 1; backExtra = 0; forwardExtra = 0;
 	}
 
 	/*

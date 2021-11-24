@@ -48,7 +48,7 @@ public class SaddamHussein extends P implements MNKPlayer {
 			List<MNKCell> list = Arrays.asList(FC);
 			ArrayList<MNKCell> moves = new ArrayList<MNKCell>(list);
 			abp.getMove(moves, myLastCell, foeCell);
-			int[] a = abp.checkMoveAround(foeCell,P.foe);
+			int[] a = abp.findBestMoves(foeCell,P.foe);
 			System.out.println("horizontal length"+a[0]+" back "+a[1]+" forward "+a[2]);
 			return FC[0];//abp.getMove(moves, myLastCell, foeCell);
 		}
