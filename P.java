@@ -10,6 +10,6 @@ public class P {
     static protected MNKCellState me;
 	static protected MNKCellState foe;
     static protected int myMoves=0, foeMoves=0;
-    protected final int ALPHA = -1000;
-	protected final int BETA = 1000;
+    protected static final int ALPHA = -1000;
+	protected static final int BETA = 1000;
 }
