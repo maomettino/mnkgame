@@ -3,12 +3,8 @@ package mnkgame;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import javax.lang.model.util.ElementScanner14;
-import javax.swing.text.html.FormView;
-
-import mnkgame.ChainState;
 import mnkgame.MNKCell;
-import mnkgame.MNKCellState;
+import mnkgame.Node;
 
 public class AlphaBetaPruning extends P {
 	private final int[][] DIRECTION = { { -1, 0 }, // up
@@ -21,13 +17,10 @@ public class AlphaBetaPruning extends P {
 			{ -1, -1 } // up-left
 	};
 	private final int MAX_DEPTH = 5;
-	private final int ALPHA = -1000;
-	private final int BETA = 1000;
 	// the level of the current father
 	private int currentDepth;
 	private boolean iWin;
 	private boolean foeWins;
-	private MNKCell bestMove;
 	/**
 	 * @param b local board to do stuff without touching the actual board
 	 */
@@ -39,89 +32,117 @@ public class AlphaBetaPruning extends P {
 		currentDepth = -1;
 	}
 
-	public MNKCell getMove(MNKCell myLastMove, MNKCell foeLastMove) {
+	public MNKCell getMove(MNKCell saddamLastMove, MNKCell foeLastMove) {
 		// make sure that local board matches the global one
 		b = P.b;
 		currentDepth = -1;
-		findBestMoves(foeLastMove, P.foe);
-		//alphaBetaPruning(foeLastMove, myLastMove, true, ALPHA, BETA);
-		return bestMove;
+		Node node =alphaBetaPruning(foeLastMove, saddamLastMove, true, P.ALPHA, P.BETA);
+		return new MNKCell(node.i, node.j);
 	}
 
-	private int alphaBetaPruning(MNKCell foeLastMove, MNKCell myLastMove, Boolean maximizingPlayer, int alpha, int beta) {
+	private Node alphaBetaPruning(MNKCell foeLastMove, MNKCell saddamLastMove, Boolean maximizingPlayer) {
 		currentDepth++;
 
-		// leaf node is reached
-		if (currentDepth == MAX_DEPTH) {
-			currentDepth--;
-			// heuristic value for the node get_heuristic_value(moves[0])
-			return 0;
-		}
-		MNKCell[] moves = findBestMoves(myLastMove, maximizingPlayer?P.me:P.foe);
-		// now the best move is the one provided by the heuristic algorithm
-		if (currentDepth == 0) {
-			bestMove = moves[0];
-		}
+		//create node for the current move with default value
+		Node node = new Node(foeLastMove.i, foeLastMove.j, P.ALPHA, P.BETA, maximizingPlayer);
+		//if current node is a leaf then
+		//return new Node(foeLastMove.i, foeLastMove.j,getHeuristicValue());
+		//the paramter is either victory/defeat for saddam or a heuristic value
 
-		if (iWin) {
-			iWin = false;
-			currentDepth--;
-			return maximizingPlayer ? BETA : ALPHA;
-		} else if (foeWins) {
-			foeWins = false;
-			currentDepth--;
-			return maximizingPlayer ? BETA : ALPHA;
-		}
+		MNKCell[] moves = findBestMoves(saddamLastMove, maximizingPlayer?P.me:P.foe);
 
+		//basically if i'm Saddam or not
 		if (maximizingPlayer) {
-			int best = ALPHA, i;
-
-			// dfs for the tree rooted in each move
-			for (i = 0; i < 8; i++) {
+			int i;
+			for (i = 0; i < moves.length; i++) {
 				MNKCell move = moves[i];
 
 				// mark current move
 				b[move.i][move.j] = P.me;
-				int val = alphaBetaPruning(foeLastMove, move, false, alpha, beta);
+
+				//create child node for the current move, aplha and beta are inherited bu the father
+				Node child = new Node(move.i, move.j, node.alpha, node.beta, !maximizingPlayer);
+
+				//returns the given node with updated value
+				child = alphaBetaPruning(foeLastMove, move, false);
 				b[move.i][move.j] = MNKCellState.FREE;
-				best = Math.max(best, val);
-				alpha = Math.max(alpha, best);
+				node.value = Math.max(node.value, child.value);
+				node.alpha = Math.max(node.alpha, node.value);
 
 				// Alpha Beta Pruning
 				// System.out.println("alpha "+alpha+ " beta "+beta);
-				if (beta <= alpha) {
-					if (currentDepth == 1)
-						bestMove = move;
+				if (node.beta <= node.alpha) {
+					//best move found for this sub-tree, no need to check other children
+					return child;
+												
 					// System.out.println("CUTOFF PER SADDAM HUSSEIN");
-					break;
 				}
 			}
-			return best;
 		} else {
 			// same stuff but from foe's pov
-			int best = BETA, i;
-			for (i = 0; i < 8; i++) {
+			int i;
+			for (i = 0; i < moves.length; i++) {
 				MNKCell move = moves[i];
 
 				// mark current move
 				b[move.i][move.j] = P.foe;
-				int val = alphaBetaPruning(move, myLastMove, true, alpha, beta);
+
+				//create child node for the current move, aplha and beta are inherited bu the father
+				Node child = new Node(move.i, move.j, node.alpha, node.beta, maximizingPlayer);
+				child = alphaBetaPruning(move, saddamLastMove, true);
 				b[move.i][move.j] = MNKCellState.FREE;
-				best = Math.min(best, val);
-				beta = Math.min(beta, best);
+				node.value = Math.min(node.value, child.value);
+				node.beta = Math.min(node.beta, node.value);
 				// System.out.println("alpha "+alpha+ "beta "+beta);
 				// Alpha Beta Pruning
-				if (beta <= alpha) {
+				if (node.beta <= node.alpha) {
 					// System.out.println("CUTOFF PER IL NEMICO");
-					break;
+					//best move found for this sub-tree, no need to check other children
+					return child;
 				}
-
+					//maybe i should return here?
 			}
 			currentDepth--;
 			return best;
 		}
-	}
 
+		//if i get here yhen i have examined all the children of the current node and no best move was found
+		//this means that the move samples wasn't big enough, in this case we return
+		//the move suggested by the heuristic, i.e. the first one in the array
+		return new Node(moves[0].i, moves[1].j, 0);
+	}		
+
+
+
+
+
+
+
+
+
+
+
+
+	/* leaf node is reached
+		if (currentDepth == MAX_DEPTH) {
+			currentDepth--;
+			// heuristic value for the node get_heuristic_value(moves[0])
+			return 0;
+		}*/
+		/* now the best move is the one provided by the heuristic algorithm
+		if (currentDepth == 0) {
+			bestMove = moves[0];
+		} 
+
+		if (iWin) {
+			iWin = false;
+			currentDepth--;
+			return maximizingPlayer ? 1 : -1;
+		} else if (foeWins) {
+			foeWins = false;
+			currentDepth--;
+			return maximizingPlayer ? 1 : -1;
+		}*/
 	// O(4((k-2)+ 2(k-1)))= O(12k-16)=O(12(k-4/3)), 4 axes with k-2 for the around
 	// forward and backward and k-1 for jump
 	// may be optimized breaking when length + extra + jump cell =k, in this case
@@ -247,7 +268,7 @@ public class AlphaBetaPruning extends P {
 				System.out.println("diocane al quadrato D");
 			}
 		}
-		totalH = length + Math.max(backExtra, forwardExtra);
+		totalD = length + Math.max(backExtra, forwardExtra);
 		length = 1; backExtra = 0; forwardExtra = 0;
 
 		// Antidiagonal check
@@ -286,110 +307,11 @@ public class AlphaBetaPruning extends P {
 				System.out.println("diocane al quadrato AD");
 			}
 		}
-		totalH = length + Math.max(backExtra, forwardExtra);
+		totalAD = length + Math.max(backExtra, forwardExtra);
 		length = 1; backExtra = 0; forwardExtra = 0;
+
 		return new MNKCell[] {new MNKCell(cell.i, cell.j)};
-		// reset values for the next axis
 		
-	}
-
-	/*
-	 * //i may win marking one of the ends if (lV >= k-1) return true; // Vertical
-	 * check int lV = 1; for (int k = 1; i - k >= 0 && b[i - k][j] == player; k++)
-	 * lV++; // backward check for (int k = 1; i + k < m && b[i + k][j] == player;
-	 * k++) lV++; // forward check if (lV >= k) return true;
-	 * 
-	 * // Diagonal check int lD = 1; for (int k = 1; i - k >= 0 && j - k >= 0 && b[i
-	 * - k][j - k] == player; k++) lD++; // backward check for (int k = 1; i + k < m
-	 * && j + k < n && b[i + k][j + k] == player; k++) lD++; // forward check if (lD
-	 * >= k) return true;
-	 * 
-	 * // Anti-diagonal check int lAD = 1; for (int k = 1; i - k >= 0 && j + k < n
-	 * && b[i - k][j + k] == player; k++) lAD++; // backward check for (int k = 1; i
-	 * + k < m && j - k >= 0 && b[i + k][j - k] == player; k++) lAD++; // backward
-	 * check if (lAD >= k) return true;
-	 */
-	// returns the one-turn-winning move if it exists, returns -1,-1 if it doesn't
-	// O(8* check_direction ) = O(8*9*(k-1)) = O(72(k-1))
-	// IsWinningCell is O(8(k-1)), which means that checking each move
-	// is more efficient as long as they are less than 9
-	// the issue is that we don't know how many moves we will evaluate
-	// so for now we use findWinningMove since its already implemented
-	// inside the heuristic and we work so hard for it
-	private int[] findWinningMove(MNKCell move) {
-		for (int[] DIR : DIRECTION) {
-			int result[] = checkDirection(move.i, move.j, DIR, b[move.i][move.j]);// move.state
-			if (result[0] != -1) // i found a winning move
-				return new int[] { result[0], result[1] };
-		}
-		return new int[] { -1, -1 };
-	}
-
-	// from the given move moves in the given direction and returns the winning move
-	// if it exists, [-1,-1 ] otherwise
-	// O( (k-1)+IsWinningCell() ) = O( k-1 + 8k-8) = O(9k-9)
-	private int[] checkDirection(int i, int j, int[] DIR, MNKCellState cellState) {
-		// the move is out of the board bound or it's marked by the other player
-		i += DIR[0];
-		j += DIR[1];
-		if (i < 0 || i >= m || j < 0 || j >= n || (b[i][j] != MNKCellState.FREE && b[i][j] != cellState))
-			return new int[] { -1, -1 };
-		else if (b[i][j] == MNKCellState.FREE) { // the move is free
-			Boolean win = isWinningCell(i, j, cellState);
-			if (win)
-				return new int[] { i, j };
-			else {
-				return new int[] { -1, -1 };
-			}
-		}
-		// recursive case
-		return checkDirection(i, j, DIR, cellState);
-	}
-
-	// marks the given move for the given player and checks if he wins
-	// O(8(k-1))
-	private boolean isWinningCell(int i, int j, MNKCellState player) {
-		// can't check a move if it's already marked
-		if (b[i][j] != MNKCellState.FREE)
-			return false;
-		int c;
-		// Horizontal check
-		c = 1;
-		for (int k = 1; j - k >= 0 && b[i][j - k] == player; k++)
-			c++; // backward check
-		for (int k = 1; j + k < n && b[i][j + k] == player; k++)
-			c++; // forward check
-		if (c >= k)
-			return true;
-
-		// Vertical check
-		c = 1;
-		for (int k = 1; i - k >= 0 && b[i - k][j] == player; k++)
-			c++; // backward check
-		for (int k = 1; i + k < m && b[i + k][j] == player; k++)
-			c++; // forward check
-		if (c >= k)
-			return true;
-
-		// Diagonal check
-		c = 1;
-		for (int k = 1; i - k >= 0 && j - k >= 0 && b[i - k][j - k] == player; k++)
-			c++; // backward check
-		for (int k = 1; i + k < m && j + k < n && b[i + k][j + k] == player; k++)
-			c++; // forward check
-		if (c >= k)
-			return true;
-
-		// Anti-diagonal check
-		c = 1;
-		for (int k = 1; i - k >= 0 && j + k < n && b[i - k][j + k] == player; k++)
-			c++; // backward check
-		for (int k = 1; i + k < m && j - k >= 0 && b[i + k][j - k] == player; k++)
-			c++; // backward check
-		if (c >= k)
-			return true;
-
-		return false;
 	}
 
 	private void printMatrix(MNKCellState[][] matrix) {
