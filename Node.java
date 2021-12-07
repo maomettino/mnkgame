@@ -7,13 +7,19 @@ public class Node extends P{
     public int alpha;
     public int beta;
     public int value;
-
-    public Node(int i, int j, int alpha, int beta, boolean isSaddam) {
+    public final int iParent;
+    public final int jParent;
+    public Node bestChild;
+    
+    //constructor for regular nodes
+    public Node(int i, int j, int alpha, int beta, int value, int iParent, int jParent) {
         this.i = i;
         this.j = j;
         this.alpha = alpha;
         this.beta = beta;
-        this.value = isSaddam?P.ALPHA:P.BETA;
+        this.value = value;
+        this.iParent = iParent;
+        this.jParent = jParent;
     }
 
     //contructor for leaf nodes

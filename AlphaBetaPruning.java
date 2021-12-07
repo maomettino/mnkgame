@@ -2,156 +2,112 @@ package mnkgame;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.PriorityQueue;
 
-import mnkgame.MNKCell;
-import mnkgame.MNKCellState;
-import mnkgame.Node;
-
-public class AlphaBetaPruning extends P {
+public class AlphaBetaPruning {
+	private final int m, n, k;
 	private final int MAX_DEPTH = 5;
-	// the level of the current father
+	private final int WIN = 1;
+	private final int DEFEAT = -1;
+	private final int ALPHA = -1000;
+	private final int BETA = 1000;
+	private final int TIMEOUT;
 	private int currentDepth;
-	private boolean iWin;
-	private boolean foeWins;
-	/**
-	 * @param b local board to do stuff without touching the actual board
-	 */
+	private int saddamMoves, foeMoves;
+	private MNKCellState saddam;
+	private MNKCellState foe;
 	private MNKCellState[][] b;
+	private MNKCellState[][] globalBoard;
 
-	public AlphaBetaPruning() {
-		iWin = false;
-		foeWins = false;
+	public AlphaBetaPruning(int m, int n, int k, boolean first, int timeout_in_secs) {
 		currentDepth = -1;
+		saddamMoves = 0;
+		foeMoves = 0;
+		TIMEOUT = timeout_in_secs;
+		this.m = m;
+		this.n = n;
+		this.k = k;
+		saddam = first ? MNKCellState.P1 : MNKCellState.P2;
+		foe = first ? MNKCellState.P2 : MNKCellState.P1;
+		b = new MNKCellState[m][n];
+		globalBoard = new MNKCellState[m][n];
+		for (int i = 0; i < m; i++)
+			for (int j = 0; j < n; j++)
+				globalBoard[i][j] = MNKCellState.FREE;
 	}
 
-	public MNKCell getMove(MNKCell saddamLastMove, MNKCell foeLastMove) {
+	public void signFoeMove(MNKCell foeCell) {
+		foeMoves++;
+		globalBoard[foeCell.i][foeCell.j] = foe;
+	}
+
+	public MNKCell getMove(MNKCell saddamLastCell, MNKCell foeLastCell) {
 		// make sure that local board matches the global one
-		b = P.b;
+		for (int i = 0; i < m; i++)
+			for (int j = 0; j < n; j++)
+				b[i][j] = globalBoard[i][j];
 		currentDepth = -1;
-		Node node = alphaBetaPruning(foeLastMove, saddamLastMove, P.ALPHA, P.BETA, true);
+		saddamMoves++;
+		foeMoves++;
+		globalBoard[saddamLastCell.i][saddamLastCell.j] = saddam;
+		globalBoard[foeLastCell.i][foeLastCell.j] = foe;
+		Node father = new Node(foeLastCell.i, foeLastCell.j, ALPHA, BETA, ALPHA, saddamLastCell.i, saddamLastCell.j);
+		Node node = alphaBetaPruning(father, true);
 		return new MNKCell(node.i, node.j);
 	}
 
-	private Node alphaBetaPruning(MNKCell foeLastMove, MNKCell saddamLastMove, int alpha, int beta,
-			Boolean maximizingPlayer) {
+	private Node alphaBetaPruning(Node father, Boolean max) {
 		currentDepth++;
-		// in each recursive call i create a node and update it by iterating through its
-		// children
-		// then i return said node to update the node at the upper level
-		// if the latter node is at depth 0 then must return the node
-		// that caused the cut-off if there was any, otherwise the beta-pruning
-		// failed and we the return the first move computed by the heuristic
-		// create node for the current move with default value
-		// if current node is a leaf then
-		// return new Node(foeLastMove.i, foeLastMove.j,getHeuristicValue());
-		// the paramter is either victory/defeat for saddam or a heuristic value
-
-		MNKCell[] moves = findBestMoves(saddamLastMove, foeLastMove, maximizingPlayer ? true : false);
-		if (moves.length == 1)
-			return new Node(foeLastMove.i, foeLastMove.j, 1);
+		Node[] children = findBestNodes(father);
+		if (children.length == 1 && children[1].value == WIN)
+			return children[1];
 		if (currentDepth == MAX_DEPTH)
-			return new Node(foeLastMove.i, foeLastMove.j, 0);// getHeuristicValue()
-		Node node = new Node(foeLastMove.i, foeLastMove.j, alpha, beta, maximizingPlayer);
-		// basically if i'm Saddam or not
-		if (maximizingPlayer) {
-			int i;
-			for (i = 0; i < moves.length; i++) {
-				MNKCell move = moves[i];
-
-				// mark current move
-				b[move.i][move.j] = P.me;
-
-				// create child node for the current move, aplha and beta are inherited bu the
-				// father
-				// Node child = new Node(move.i, move.j, node.alpha, node.beta,
-				// !maximizingPlayer);
-
-				// returns the given node with updated value
-				Node child = alphaBetaPruning(foeLastMove, move, node.alpha, node.beta, false);
-				b[move.i][move.j] = MNKCellState.FREE;
-				node.value = Math.max(node.value, child.value);
-				node.alpha = Math.max(node.alpha, node.value);
-
-				// best move found for this sub-tree, no need to check other childre
-				if (node.beta <= node.alpha) {
-						break;
-					// System.out.println("CUTOFF PER SADDAM HUSSEIN");
+			return children[1];
+		int i;
+		for (i = 0; i < children.length; i++) {
+			globalBoard[children[i].i][children[i].j] = max ? saddam : foe;
+			Node child = alphaBetaPruning(children[i], !max);
+			globalBoard[child.i][child.j] = MNKCellState.FREE;
+			if (max) {
+				if(currentDepth == -1 && Math.max(father.value, child.value)== child.value ) {
+					//relative best child, in the end it will be the best
+					father.bestChild = child;
 				}
+				father.value = Math.max(father.value, child.value);
+				father.alpha = Math.max(father.alpha, father.value);
+			} else {
+				father.value = Math.min(father.value, child.value);
+				father.beta = Math.min(father.beta, father.value);
 			}
-		} else {
-			// same stuff but from foe's pov
-			int i;
-			for (i = 0; i < moves.length; i++) {
-				MNKCell move = moves[i];
-
-				// mark current move
-				b[move.i][move.j] = P.foe;
-
-				// create child node for the current move, aplha and beta are inherited bu the
-				// father
-				// Node child = new Node(move.i, move.j, node.alpha, node.beta,
-				// maximizingPlayer);
-				Node child = alphaBetaPruning(move, saddamLastMove, node.alpha, node.beta, true);
-				b[move.i][move.j] = MNKCellState.FREE;
-				node.value = Math.min(node.value, child.value);
-				node.beta = Math.min(node.beta, node.value);
-				if (node.beta <= node.alpha) {
-					// return the move that caused the cut-off at depth 0, i.e the best move we're
-					break;
-				}
+			if (father.beta <= father.alpha) {
+				break;
 			}
-
 		}
 		currentDepth--;
-
-		// if i get here then i have examined all the children of the current node and
-		// no best move was found
-		// this means that the move samples wasn't big enough, so we return
-		// the move suggested by the heuristic, i.e. the first one in the array if the
-		// current node is the root, otherwise we return the node itself which is now
-		// updated
-		// and ready to be used to update the upper node
 		if (currentDepth == -1)
-			return new Node(moves[0].i, moves[1].j, 0);
+			return father.bestChild;
 		else
-			return node;
+			return father;
 	}
 
-	/*
-	 * leaf node is reached if (currentDepth == MAX_DEPTH) { currentDepth--; //
-	 * heuristic value for the node get_heuristic_value(moves[0]) return 0; }
-	 */
-	/*
-	 * now the best move is the one provided by the heuristic algorithm if
-	 * (currentDepth == 0) { bestMove = moves[0]; }
-	 * 
-	 * if (iWin) { iWin = false; currentDepth--; return maximizingPlayer ? 1 : -1; }
-	 * else if (foeWins) { foeWins = false; currentDepth--; return maximizingPlayer
-	 * ? 1 : -1; }
-	 */ 
 	// O(4((k-2)+ 2(k-1)))= O(12k-16)=O(12(k-4/3)), 4 axes with k-2 for the around
 	// forward and backward and k-1 for jump
 	// may be optimized breaking when length + extra + jump cell =k, in this case
 	// O(4(k))
-	public MNKCell[] findBestMoves(MNKCell saddamMove, MNKCell foeMove, boolean isSaddam) {
+	public Node[] findBestNodes(Node father) {
 		// moves to come closer to victory
-		MNKCell[] s = checkAround(isSaddam ? saddamMove : foeMove, false);
+		// Move[] s = checkAround(isSaddam ? saddamMove : foeMove, true);
 
 		// moves to disrupt the enemy
-		MNKCell[] f = checkAround(isSaddam ? foeMove : saddamMove, true);
-		return s;
+		// Move[] f = checkAround(isSaddam ? foeMove : saddamMove, false);
+		return father;
 
 	}
 
-	/*
-	 * moves order: -i win in one move -foe wins in one turn -i win in two moves
-	 * -foe wins in two turns -around moves(needs an order?) -adjacent moves(are
-	 * actually needed?) refactoring: -take myLastMove and foeLastMove and
-	 * evverything together, i.e. no disrupt case -implement two win move check for
-	 * me as well for now just refactor stuff and return absolute best moves only,
-	 * if there is any, or around moves otherwise
-	 */
-	public MNKCell[] checkAround(MNKCell cell, boolean disrupt) {
+	public Move[] checkAround(Move cell, boolean full) {
+		PriorityQueue q;
+		if (full)
+			q = new PriorityQueue<Move>(8, new Comparatore());
 		// check stuff for current player
 		int i = cell.i;
 		int j = cell.j;
@@ -160,7 +116,6 @@ public class AlphaBetaPruning extends P {
 
 		// first and second are about the jump cell and its immediate next
 		boolean[] freeBack = { false, false }, freeForward = { false, false };
-
 		// Horizontal check
 		// backward check
 		for (backCount = 1; j - backCount >= 0 && b[i][j - backCount] == player; backCount++)
@@ -175,22 +130,22 @@ public class AlphaBetaPruning extends P {
 
 			if (length == P.k - 1) {
 				System.out.println("diocane H ");
-				return new MNKCell[] { new MNKCell(i, j - backCount) };
+				return new Move[] { new Move(i, j - backCount, true) };
 			}
 			int rest = P.k - length - 1;
 			for (int c = 1; j - backCount - c >= 0 && b[i][j - backCount - c] == player && c <= rest; c++)
 				backExtra++;
 			if (length + backExtra == P.k - 1) {
 				System.out.println("diocane al quadrato H");
-				return new MNKCell[] { new MNKCell(i, j - backCount) };
+				return new Move[] { new Move(i, j - backCount) };
 			}
 
 			// check for the k-2 chain stuff
-			if(disrupt)  {
-				freeBack[0]= true;
-				if (j - backCount -1 >= 0 && b[i][j - backCount - 1] == MNKCellState.FREE)
-					freeBack[1]=true;
-			}	
+
+			freeBack[0] = true;
+			if (j - backCount - 1 >= 0 && b[i][j - backCount - 1] == MNKCellState.FREE)
+				freeBack[1] = true;
+
 		}
 
 		// forward jump and extra chain check
@@ -198,27 +153,25 @@ public class AlphaBetaPruning extends P {
 			;
 			if (length == P.k - 1) {
 				System.out.println("diocane H");
-				return new MNKCell[] { new MNKCell(i, j + forwardCount) };
+				return new Move[] { new Move(i, j + forwardCount, true) };
 			}
 			int rest = P.k - length - 1;
 			for (int c = 1; j + forwardCount + c < n && b[i][j + forwardCount + c] == player && c <= rest; c++)
 				forwardExtra++;
 			if (length + forwardExtra == P.k - 1) {
 				System.out.println("diocane al quadrato H");
-				return new MNKCell[] { new MNKCell(i, j + forwardCount) };
+				return new Move[] { new Move(i, j + forwardCount, true) };
 			}
 
-			if(disrupt)  {
-				freeForward[0]= true;
-				if (j + forwardCount + 1 <n && b[i][j + forwardCount + 1] == MNKCellState.FREE)
-					freeForward[1]=true;
-			}	
+			freeForward[0] = true;
+			if (j + forwardCount + 1 < n && b[i][j + forwardCount + 1] == MNKCellState.FREE)
+				freeForward[1] = true;
 
 		}
 		if (length == P.k - 2 && freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
-			//if both directions are avaiable choose one of them, in this case the back
-			j = freeBack[1]?j-backCount:j+forwardCount;
-			return new MNKCell[]{new MNKCell(i, j)};
+			// if both directions are avaiable choose one of them, in this case the back
+			j = freeBack[1] ? j - backCount : j + forwardCount;
+			return new Move[] { new Move(i, j) };
 		}
 		freeBack[0] = false;
 		freeBack[1] = false;
@@ -241,14 +194,14 @@ public class AlphaBetaPruning extends P {
 		if (i - backCount >= 0 && b[i - backCount][j] == MNKCellState.FREE) {
 			if (length == P.k - 1) {
 				System.out.println("diocane V");
-				return new MNKCell[] { new MNKCell(i - backCount, j) };
+				return new Move[] { new Move(i - backCount, j) };
 			}
 			int rest = P.k - length - 1;
 			for (int c = 1; i - backCount - c >= 0 && b[i - backCount - c][j] == player && c <= rest; c++)
 				backExtra++;
 			if (length + backExtra == P.k - 1) {
 				System.out.println("diocane al quadrato V");
-				return new MNKCell[] { new MNKCell(i - backCount, j) };
+				return new Move[] { new Move(i - backCount, j) };
 			}
 
 			// check for the k-2 chain stuff
@@ -263,14 +216,14 @@ public class AlphaBetaPruning extends P {
 		if (i + forwardCount < n && b[i + forwardCount][j] == MNKCellState.FREE) {
 			if (length == P.k - 1) {
 				System.out.println("diocane V");
-				return new MNKCell[] { new MNKCell(i + forwardCount, j) };
+				return new Move[] { new Move(i + forwardCount, j) };
 			}
 			int rest = P.k - length - 1;
 			for (int c = 1; i + forwardCount + c < n && b[i + forwardCount + c][j] == player && c <= rest; c++)
 				forwardExtra++;
 			if (length + forwardExtra == P.k - 1) {
 				System.out.println("diocane al quadrato V");
-				return new MNKCell[] { new MNKCell(i + forwardCount, j) };
+				return new Move[] { new Move(i + forwardCount, j) };
 			}
 
 			freeForward[0] = true;
@@ -279,9 +232,9 @@ public class AlphaBetaPruning extends P {
 
 		}
 		if (length == P.k - 2 && freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
-			//if both directions are avaiable choose one of them, in this case the back
-			i = freeBack[1]?i-backCount:i+forwardCount;
-			return new MNKCell[]{new MNKCell(i, j)};
+			// if both directions are avaiable choose one of them, in this case the back
+			i = freeBack[1] ? i - backCount : i + forwardCount;
+			return new Move[] { new Move(i, j) };
 
 		}
 		freeBack[0] = false;
@@ -307,7 +260,7 @@ public class AlphaBetaPruning extends P {
 		if (j - backCount >= 0 && i - backCount >= 0 && b[i - backCount][j - backCount] == MNKCellState.FREE) {
 			if (length == P.k - 1) {
 				System.out.println("diocane D");
-				return new MNKCell[] { new MNKCell(i - backCount, j - backCount) };
+				return new Move[] { new Move(i - backCount, j - backCount) };
 			}
 			int rest = P.k - length - 1;
 			for (int c = 1; j - backCount - c >= 0 && i - backCount - c >= 0
@@ -315,7 +268,7 @@ public class AlphaBetaPruning extends P {
 				backExtra++;
 			if (length + backExtra == P.k - 1) {
 				System.out.println("diocane al quadrato D");
-				return new MNKCell[] { new MNKCell(i - backCount, j - backCount) };
+				return new Move[] { new Move(i - backCount, j - backCount) };
 			}
 
 			// check for the k-2 chain stuff
@@ -332,7 +285,7 @@ public class AlphaBetaPruning extends P {
 				&& b[i + forwardCount][j + forwardCount] == MNKCellState.FREE) {
 			if (length == P.k - 1) {
 				System.out.println("diocane D");
-				return new MNKCell[] { new MNKCell(i + forwardCount, j + forwardCount) };
+				return new Move[] { new Move(i + forwardCount, j + forwardCount) };
 			}
 			int rest = P.k - length - 1;
 			for (int c = 1; j + forwardCount + c < n && i + forwardCount + c < n
@@ -340,7 +293,7 @@ public class AlphaBetaPruning extends P {
 				forwardExtra++;
 			if (length + forwardExtra == P.k - 1) {
 				System.out.println("diocane al quadrato D");
-				return new MNKCell[] { new MNKCell(i + forwardCount, j + forwardCount) };
+				return new Move[] { new Move(i + forwardCount, j + forwardCount) };
 			}
 
 			freeForward[0] = true;
@@ -350,10 +303,10 @@ public class AlphaBetaPruning extends P {
 
 		}
 		if (length == P.k - 2 && freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
-			//if both directions are avaiable choose one of them, in this case the back
-			i = freeForward[1]?i-backCount:i+forwardCount;
-			j = freeBack[1]?j-backCount:j+forwardCount;
-			return new MNKCell[]{new MNKCell(i, j)};
+			// if both directions are avaiable choose one of them, in this case the back
+			i = freeForward[1] ? i - backCount : i + forwardCount;
+			j = freeBack[1] ? j - backCount : j + forwardCount;
+			return new Move[] { new Move(i, j) };
 
 		}
 		freeBack[0] = false;
@@ -379,7 +332,7 @@ public class AlphaBetaPruning extends P {
 		if (j + backCount < n && i - backCount >= 0 && b[i - backCount][j + backCount] == MNKCellState.FREE) {
 			if (length == P.k - 1) {
 				System.out.println("diocane AD");
-				return new MNKCell[] { new MNKCell(i - backCount, j + backCount) };
+				return new Move[] { new Move(i - backCount, j + backCount) };
 			}
 			int rest = P.k - length - 1;
 			for (int c = 1; j + backCount + c < n && i - backCount - c >= 0
@@ -387,7 +340,7 @@ public class AlphaBetaPruning extends P {
 				backExtra++;
 			if (length + backExtra == P.k - 1) {
 				System.out.println("diocane al quadrato AD");
-				return new MNKCell[] { new MNKCell(i - backCount, j + backCount) };
+				return new Move[] { new Move(i - backCount, j + backCount) };
 			}
 
 			freeBack[0] = true;
@@ -402,7 +355,7 @@ public class AlphaBetaPruning extends P {
 				&& b[i + forwardCount][j - forwardCount] == MNKCellState.FREE) {
 			if (length == P.k - 1) {
 				System.out.println("diocane AD");
-				return new MNKCell[] { new MNKCell(i + forwardCount, j - forwardCount) };
+				return new Move[] { new Move(i + forwardCount, j - forwardCount) };
 			}
 			int rest = P.k - length - 1;
 			for (int c = 1; j - forwardCount - c >= 0 && i + forwardCount + c < n
@@ -410,7 +363,7 @@ public class AlphaBetaPruning extends P {
 				forwardExtra++;
 			if (length + forwardExtra == P.k - 1) {
 				System.out.println("diocane al quadrato AD");
-				return new MNKCell[] { new MNKCell(i + forwardCount, j - forwardCount) };
+				return new Move[] { new Move(i + forwardCount, j - forwardCount) };
 			}
 
 			freeForward[0] = true;
@@ -420,10 +373,10 @@ public class AlphaBetaPruning extends P {
 
 		}
 		if (length == P.k - 2 && freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
-			//if both directions are avaiable choose one of them, in this case the back
-			i= freeBack[1]?i-backCount:i+forwardCount;
-			j = freeBack[1]?j+backCount:j-forwardCount;
-			return new MNKCell[]{new MNKCell(i, j)};
+			// if both directions are avaiable choose one of them, in this case the back
+			i = freeBack[1] ? i - backCount : i + forwardCount;
+			j = freeBack[1] ? j + backCount : j - forwardCount;
+			return new Move[] { new Move(i, j) };
 
 		}
 		freeBack[0] = false;
@@ -433,7 +386,7 @@ public class AlphaBetaPruning extends P {
 		backExtra = 0;
 		forwardExtra = 0;
 
-		return new MNKCell[] { new MNKCell(cell.i, cell.j) };
+		return new Move[] { new Move(cell.i, cell.j) };
 
 	}
 
