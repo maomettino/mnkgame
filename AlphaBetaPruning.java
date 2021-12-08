@@ -4,6 +4,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.PriorityQueue;
 
+import Test.Move;
+import mnkgame.Node;
+import mnkgame.State;
+
 public class AlphaBetaPruning {
 	private final int m, n, k;
 	private final int MAX_DEPTH = 5;
@@ -69,8 +73,8 @@ public class AlphaBetaPruning {
 			Node child = alphaBetaPruning(children[i], !max);
 			globalBoard[child.i][child.j] = MNKCellState.FREE;
 			if (max) {
-				if(currentDepth == -1 && Math.max(father.value, child.value)== child.value ) {
-					//relative best child, in the end it will be the best
+				if (currentDepth == -1 && Math.max(father.value, child.value) == child.value) {
+					// relative best child, in the end it will be the best
 					father.bestChild = child;
 				}
 				father.value = Math.max(father.value, child.value);
@@ -94,299 +98,236 @@ public class AlphaBetaPruning {
 	// forward and backward and k-1 for jump
 	// may be optimized breaking when length + extra + jump cell =k, in this case
 	// O(4(k))
+	/*
+	 * PriorityQueue q;
+	 * if (full)
+	 * q = new PriorityQueue<Move>(8, new Comparatore());
+	 */
 	public Node[] findBestNodes(Node father) {
-		// moves to come closer to victory
-		// Move[] s = checkAround(isSaddam ? saddamMove : foeMove, true);
-
-		// moves to disrupt the enemy
-		// Move[] f = checkAround(isSaddam ? foeMove : saddamMove, false);
+		// public PriorityQueue q;
+		// q = new PriorityQueue<Move>(8, new Comparatore())
+		Moves myMoves = new Moves();
+		checkAround(father.iParent, father.jParent, myMoves, true);
+		Moves foeMoves = new Moves();
+		checkAround(father.i, father.j, foeMoves, false);
 		return father;
-
 	}
 
-	public Move[] checkAround(Move cell, boolean full) {
-		PriorityQueue q;
-		if (full)
-			q = new PriorityQueue<Move>(8, new Comparatore());
-		// check stuff for current player
-		int i = cell.i;
-		int j = cell.j;
-		MNKCellState player = b[i][j];
+	public void checkAround(int i, int j, Moves moves, boolean full) {
+		//swagger
+		MNKCellState player = globalBoard[i][j];
 		int length = 1, backExtra = 0, forwardExtra = 0, backCount, forwardCount;
-
-		// first and second are about the jump cell and its immediate next
-		boolean[] freeBack = { false, false }, freeForward = { false, false };
-		// Horizontal check
-		// backward check
-		for (backCount = 1; j - backCount >= 0 && b[i][j - backCount] == player; backCount++)
+		boolean freeBack[] = {false, false}, freeForward[] = {false, false};
+		for (backCount = 1; j - backCount >= 0 && globalBoard[i][j - backCount] == player; backCount++)
 			length++;
-
-		// forward check
-		for (forwardCount = 1; j + forwardCount < n && b[i][j + forwardCount] == player; forwardCount++)
+		for (forwardCount = 1; j + forwardCount < n && globalBoard[i][j + forwardCount] == player; forwardCount++)
 			length++;
-
-		// back jump and extra chain check
-		if (j - backCount >= 0 && b[i][j - backCount] == MNKCellState.FREE) {
-
-			if (length == P.k - 1) {
-				System.out.println("diocane H ");
-				return new Move[] { new Move(i, j - backCount, true) };
+		if (j - backCount >= 0 && globalBoard[i][j - backCount] == MNKCellState.FREE) {
+			if (length == k - 1) {
+				int move[] = { i, j - backCount };
+				moves.win = move;
+				break;
 			}
-			int rest = P.k - length - 1;
-			for (int c = 1; j - backCount - c >= 0 && b[i][j - backCount - c] == player && c <= rest; c++)
+			int rest = k - length - 1;
+			for (int c = 1; j - backCount - c >= 0 && globalBoard[i][j - backCount - c] == player && c <= rest; c++)
 				backExtra++;
-			if (length + backExtra == P.k - 1) {
-				System.out.println("diocane al quadrato H");
-				return new Move[] { new Move(i, j - backCount) };
+			if (length + backExtra == k - 1) {
+				int move[] = { i, j - backCount };
+				moves.win = move;
+				break;
 			}
-
-			// check for the k-2 chain stuff
-
 			freeBack[0] = true;
-			if (j - backCount - 1 >= 0 && b[i][j - backCount - 1] == MNKCellState.FREE)
+			if (j - backCount - 1 >= 0 && globalBoard[i][j - backCount - 1] == MNKCellState.FREE)
 				freeBack[1] = true;
 
 		}
-
-		// forward jump and extra chain check
-		if (j + forwardCount < n && b[i][j + forwardCount] == MNKCellState.FREE) {
-			;
-			if (length == P.k - 1) {
-				System.out.println("diocane H");
-				return new Move[] { new Move(i, j + forwardCount, true) };
+		if (j + forwardCount < n && globalBoard[i][j + forwardCount] == MNKCellState.FREE) {
+			if (length == k - 1) {
+				int move[] = { i, j + forwardCount };
+				moves.win = move;
+				break;
 			}
-			int rest = P.k - length - 1;
-			for (int c = 1; j + forwardCount + c < n && b[i][j + forwardCount + c] == player && c <= rest; c++)
+			int rest = k - length - 1;
+			for (int c = 1; j + forwardCount + c < n && globalBoard[i][j + forwardCount + c] == player && c <= rest; c++)
 				forwardExtra++;
-			if (length + forwardExtra == P.k - 1) {
-				System.out.println("diocane al quadrato H");
-				return new Move[] { new Move(i, j + forwardCount, true) };
+			if (length + forwardExtra == k - 1) {
+				int move[] = { i, j + forwardCount };
+				moves.win = move;
+				break;
 			}
-
 			freeForward[0] = true;
-			if (j + forwardCount + 1 < n && b[i][j + forwardCount + 1] == MNKCellState.FREE)
+			if (j + forwardCount + 1 < n && globalBoard[i][j + forwardCount + 1] == MNKCellState.FREE)
 				freeForward[1] = true;
 
 		}
-		if (length == P.k - 2 && freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
-			// if both directions are avaiable choose one of them, in this case the back
+		if (length == k - 2 && freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
 			j = freeBack[1] ? j - backCount : j + forwardCount;
-			return new Move[] { new Move(i, j) };
+			int move[] = { i, j };
+				moves.twoWin = move;
 		}
-		freeBack[0] = false;
-		freeBack[1] = false;
-		freeForward[0] = false;
-		freeForward[1] = false;
-		length = 1;
-		backExtra = 0;
-		forwardExtra = 0;
+		length = 1; backExtra = 0; forwardExtra = 0;
+		freeBack[0] = false; freeBack[1] = false; freeForward[0] = false; freeForward[1] = false;
 
-		// Vertical check
-		// backward check
-		for (backCount = 1; i - backCount >= 0 && b[i - backCount][j] == player; backCount++)
+		// Vertical
+		for (backCount = 1; i - backCount >= 0 && globalBoard[i - backCount][j] == player; backCount++)
 			length++;
-
-		// forward check
-		for (forwardCount = 1; i + forwardCount < n && b[i + forwardCount][j] == player; forwardCount++)
+		for (forwardCount = 1; i + forwardCount < n && globalBoard[i + forwardCount][j] == player; forwardCount++)
 			length++;
-
-		// back jump and extra chain check
-		if (i - backCount >= 0 && b[i - backCount][j] == MNKCellState.FREE) {
-			if (length == P.k - 1) {
-				System.out.println("diocane V");
-				return new Move[] { new Move(i - backCount, j) };
+		if (i - backCount >= 0 && globalBoard[i - backCount][j] == MNKCellState.FREE) {
+			if (length == k - 1) {
+				int move[] = { i - backCount, j };
+				moves.win = move;
+				break;
 			}
-			int rest = P.k - length - 1;
-			for (int c = 1; i - backCount - c >= 0 && b[i - backCount - c][j] == player && c <= rest; c++)
+			int rest = k - length - 1;
+			for (int c = 1; i - backCount - c >= 0 && globalBoard[i - backCount - c][j] == player && c <= rest; c++)
 				backExtra++;
-			if (length + backExtra == P.k - 1) {
-				System.out.println("diocane al quadrato V");
-				return new Move[] { new Move(i - backCount, j) };
+			if (length + backExtra == k - 1) {
+				int move[] = { i - backCount, j };
+				moves.win = move;
+				break;
 			}
-
-			// check for the k-2 chain stuff
-
 			freeBack[0] = true;
-			if (i - backCount - 1 >= 0 && b[i - backCount - 1][j] == MNKCellState.FREE)
+			if (i - backCount - 1 >= 0 && globalBoard[i - backCount - 1][j] == MNKCellState.FREE)
 				freeBack[1] = true;
-
 		}
-
-		// forward jump and extra chain check
-		if (i + forwardCount < n && b[i + forwardCount][j] == MNKCellState.FREE) {
-			if (length == P.k - 1) {
-				System.out.println("diocane V");
-				return new Move[] { new Move(i + forwardCount, j) };
+		if (i + forwardCount < n && globalBoard[i + forwardCount][j] == MNKCellState.FREE) {
+			if (length == k - 1) {
+				int move[] = { i + forwardCount, j };
+				moves.win = move;
+				break;
 			}
-			int rest = P.k - length - 1;
-			for (int c = 1; i + forwardCount + c < n && b[i + forwardCount + c][j] == player && c <= rest; c++)
+			int rest = k - length - 1;
+			for (int c = 1; i + forwardCount + c < n && globalBoard[i + forwardCount + c][j] == player && c <= rest; c++)
 				forwardExtra++;
-			if (length + forwardExtra == P.k - 1) {
-				System.out.println("diocane al quadrato V");
-				return new Move[] { new Move(i + forwardCount, j) };
+			if (length + forwardExtra == k - 1) {
+				int move[] = { i + forwardCount, j };
+				moves.win = move;
+				break;
 			}
-
 			freeForward[0] = true;
-			if (i + forwardCount + 1 < n && b[i + forwardCount + 1][j] == MNKCellState.FREE)
+			if (i + forwardCount + 1 < n && globalBoard[i + forwardCount + 1][j] == MNKCellState.FREE)
 				freeForward[1] = true;
-
 		}
-		if (length == P.k - 2 && freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
-			// if both directions are avaiable choose one of them, in this case the back
+		if (length == k - 2 && freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
 			i = freeBack[1] ? i - backCount : i + forwardCount;
-			return new Move[] { new Move(i, j) };
-
+			int move[] = { i, j };
+				moves.twoWin = move;
 		}
-		freeBack[0] = false;
-		freeBack[1] = false;
-		freeForward[0] = false;
-		freeForward[1] = false;
-		length = 1;
-		backExtra = 0;
-		forwardExtra = 0;
-
-		// Diagonal check
-		// backward check
+		length = 1; backExtra = 0; forwardExtra = 0;
+		freeBack[0] = false; freeBack[1] = false; freeForward[0] = false; freeForward[1] = false;		
+		
+		//Diagonal
 		for (backCount = 1; j - backCount >= 0 && i - backCount >= 0
-				&& b[i - backCount][j - backCount] == player; backCount++)
+				&& globalBoard[i - backCount][j - backCount] == player; backCount++)
 			length++;
-
-		// forward check
 		for (forwardCount = 1; j + forwardCount < n && i + forwardCount < n
-				&& b[i + forwardCount][j + forwardCount] == player; forwardCount++)
+				&& globalBoard[i + forwardCount][j + forwardCount] == player; forwardCount++)
 			length++;
-
-		// back jump and extra chain check
-		if (j - backCount >= 0 && i - backCount >= 0 && b[i - backCount][j - backCount] == MNKCellState.FREE) {
-			if (length == P.k - 1) {
-				System.out.println("diocane D");
-				return new Move[] { new Move(i - backCount, j - backCount) };
+		if (j - backCount >= 0 && i - backCount >= 0 && globalBoard[i - backCount][j - backCount] == MNKCellState.FREE) {
+			if (length == k - 1) {
+				int move[] = { i - backCount, j - backCount };
+				moves.win = move;
+				break;
 			}
-			int rest = P.k - length - 1;
+			int rest = k - length - 1;
 			for (int c = 1; j - backCount - c >= 0 && i - backCount - c >= 0
-					&& b[i - backCount - c][j - backCount - c] == player && c <= rest; c++)
+					&& globalBoard[i - backCount - c][j - backCount - c] == player && c <= rest; c++)
 				backExtra++;
-			if (length + backExtra == P.k - 1) {
-				System.out.println("diocane al quadrato D");
-				return new Move[] { new Move(i - backCount, j - backCount) };
+			if (length + backExtra == k - 1) {
+				int move[] = { i - backCount, j - backCount };
+				moves.win = move;
+				break;
 			}
-
-			// check for the k-2 chain stuff
-
 			freeBack[0] = true;
 			if (j - backCount - 1 >= 0 && i - backCount - 1 >= 0
-					&& b[i - backCount - 1][j - backCount - 1] == MNKCellState.FREE)
+					&& globalBoard[i - backCount - 1][j - backCount - 1] == MNKCellState.FREE)
 				freeBack[1] = true;
-
 		}
-
-		// forward jump and extra chain check
 		if (j + forwardCount < n && i + forwardCount < n
-				&& b[i + forwardCount][j + forwardCount] == MNKCellState.FREE) {
-			if (length == P.k - 1) {
-				System.out.println("diocane D");
-				return new Move[] { new Move(i + forwardCount, j + forwardCount) };
+				&& globalBoard[i + forwardCount][j + forwardCount] == MNKCellState.FREE) {
+			if (length == k - 1) {
+				int move[] = { i + forwardCount, j + forwardCount };
+				moves.win = move;
+				break;
 			}
-			int rest = P.k - length - 1;
+			int rest = k - length - 1;
 			for (int c = 1; j + forwardCount + c < n && i + forwardCount + c < n
-					&& b[i + forwardCount + c][j + forwardCount + c] == player && c <= rest; c++)
+					&& globalBoard[i + forwardCount + c][j + forwardCount + c] == player && c <= rest; c++)
 				forwardExtra++;
-			if (length + forwardExtra == P.k - 1) {
-				System.out.println("diocane al quadrato D");
-				return new Move[] { new Move(i + forwardCount, j + forwardCount) };
+			if (length + forwardExtra == k - 1) {
+				int move[] = { i + forwardCount, j + forwardCount };
+				moves.win = move;
+				break;
 			}
-
 			freeForward[0] = true;
 			if (j + forwardCount + 1 < n && i + forwardCount + 1 < n
-					&& b[i + forwardCount + 1][j + forwardCount + 1] == MNKCellState.FREE)
+					&& globalBoard[i + forwardCount + 1][j + forwardCount + 1] == MNKCellState.FREE)
 				freeForward[1] = true;
-
 		}
-		if (length == P.k - 2 && freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
-			// if both directions are avaiable choose one of them, in this case the back
+		if (length == k - 2 && freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
 			i = freeForward[1] ? i - backCount : i + forwardCount;
 			j = freeBack[1] ? j - backCount : j + forwardCount;
-			return new Move[] { new Move(i, j) };
-
+			int move[] = { i, j };
+				moves.twoWin = move;
 		}
-		freeBack[0] = false;
-		freeBack[1] = false;
-		freeForward[0] = false;
-		freeForward[1] = false;
-		length = 1;
-		backExtra = 0;
-		forwardExtra = 0;
+		length = 1; backExtra = 0; forwardExtra = 0;
+		freeBack[0] = false; freeBack[1] = false; freeForward[0] = false; freeForward[1] = false;
 
-		// Antidiagonal check
-		// backward check
+		//Antidiagonal
 		for (backCount = 1; j + backCount < n && i - backCount >= 0
-				&& b[i - backCount][j + backCount] == player; backCount++)
+				&& globalBoard[i - backCount][j + backCount] == player; backCount++)
 			length++;
-
-		// forward check
 		for (forwardCount = 1; j - forwardCount >= 0 && i + forwardCount < n
-				&& b[i + forwardCount][j - forwardCount] == player; forwardCount++)
+				&& globalBoard[i + forwardCount][j - forwardCount] == player; forwardCount++)
 			length++;
-
-		// back jump and extra chain check
-		if (j + backCount < n && i - backCount >= 0 && b[i - backCount][j + backCount] == MNKCellState.FREE) {
-			if (length == P.k - 1) {
-				System.out.println("diocane AD");
-				return new Move[] { new Move(i - backCount, j + backCount) };
+		if (j + backCount < n && i - backCount >= 0 && globalBoard[i - backCount][j + backCount] == MNKCellState.FREE) {
+			if (length == k - 1) {
+				int move[] = { i - backCount, j + backCount };
+				moves.win = move;
+				break;
 			}
-			int rest = P.k - length - 1;
+			int rest = k - length - 1;
 			for (int c = 1; j + backCount + c < n && i - backCount - c >= 0
-					&& b[i - backCount - c][j + backCount + c] == player && c <= rest; c++)
+					&& globalBoard[i - backCount - c][j + backCount + c] == player && c <= rest; c++)
 				backExtra++;
-			if (length + backExtra == P.k - 1) {
-				System.out.println("diocane al quadrato AD");
-				return new Move[] { new Move(i - backCount, j + backCount) };
+			if (length + backExtra == k - 1) {
+				int move[] = { i - backCount, j + backCount };
+				moves.win = move;
+				break;
 			}
-
 			freeBack[0] = true;
 			if (j + backCount + 1 >= 0 && i - backCount - 1 >= 0
-					&& b[i - backCount - 1][j + backCount - 1] == MNKCellState.FREE)
+					&& globalBoard[i - backCount - 1][j + backCount - 1] == MNKCellState.FREE)
 				freeBack[1] = true;
-
 		}
-
-		// forward jump and extra chain check
 		if (j - forwardCount >= 0 && i + forwardCount < n
-				&& b[i + forwardCount][j - forwardCount] == MNKCellState.FREE) {
-			if (length == P.k - 1) {
-				System.out.println("diocane AD");
-				return new Move[] { new Move(i + forwardCount, j - forwardCount) };
+				&& globalBoard[i + forwardCount][j - forwardCount] == MNKCellState.FREE) {
+			if (length == k - 1) {
+				int move[] = { i - forwardCount, j + forwardCount };
+				moves.win = move;
+				break;
 			}
-			int rest = P.k - length - 1;
+			int rest = k - length - 1;
 			for (int c = 1; j - forwardCount - c >= 0 && i + forwardCount + c < n
-					&& b[i + forwardCount + c][j - forwardCount - c] == player && c <= rest; c++)
+					&& globalBoard[i + forwardCount + c][j - forwardCount - c] == player && c <= rest; c++)
 				forwardExtra++;
-			if (length + forwardExtra == P.k - 1) {
-				System.out.println("diocane al quadrato AD");
-				return new Move[] { new Move(i + forwardCount, j - forwardCount) };
+			if (length + forwardExtra == k - 1) {
+				int move[] = { i- forwardCount, j + forwardCount };
+				moves.win = move;
+				break;
 			}
-
 			freeForward[0] = true;
 			if (j - forwardCount - 1 < n && i + forwardCount + 1 < n
-					&& b[i + forwardCount + 1][j - forwardCount - 1] == MNKCellState.FREE)
+					&& globalBoard[i + forwardCount + 1][j - forwardCount - 1] == MNKCellState.FREE)
 				freeForward[1] = true;
-
 		}
-		if (length == P.k - 2 && freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
-			// if both directions are avaiable choose one of them, in this case the back
+		if (length == k - 2 && freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
 			i = freeBack[1] ? i - backCount : i + forwardCount;
 			j = freeBack[1] ? j + backCount : j - forwardCount;
-			return new Move[] { new Move(i, j) };
-
+			int move[] = { i, j };
+				moves.twoWin = move;
 		}
-		freeBack[0] = false;
-		freeBack[1] = false;
-		freeForward[0] = false;
-		freeForward[1] = false;
-		backExtra = 0;
-		forwardExtra = 0;
-
-		return new Move[] { new Move(cell.i, cell.j) };
 
 	}
 
