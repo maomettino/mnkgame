@@ -30,6 +30,7 @@ public class SaddamHussein implements MNKPlayer {
 				return FC[0];
 			MNKCell saddamLastCell = MC[MC.length - 2];
 			MNKCell foeLastCell = MC[MC.length - 1];
+			//abp.test();FC[0];//
 			return abp.getMove(saddamLastCell, foeLastCell);
 		}
 		// When it's my first turn
@@ -39,7 +40,8 @@ public class SaddamHussein implements MNKPlayer {
 				abp.signFoeMove(foeCell);
 			}
 			//choose the first move for saddam
-			return FC[0];
+			//return FC[0];
+			return new MNKCell(1, 1);
 		}
 
 	}
