@@ -55,12 +55,12 @@ public class AlphaBetaPruning {
 		foeMoves++;
 		globalBoard[saddamLastCell.i][saddamLastCell.j] = saddam;
 		globalBoard[foeLastCell.i][foeLastCell.j] = foe;
-		Node father = new Node(foeLastCell.i, foeLastCell.j, ALPHA, BETA, ALPHA, saddamLastCell.i, saddamLastCell.j);
-		Node node = alphaBetaPruning(father, true);
+		Node father = new Node(foeLastCell.i, foeLastCell.j, ALPHA, BETA, ALPHA, saddamLastCell.i, saddamLastCell.j, false);
+		Node node = alphaBetaPruning(father);
 		return new MNKCell(node.i, node.j);
 	}
 
-	private Node alphaBetaPruning(Node father, Boolean max) {
+	private Node alphaBetaPruning(Node father) {
 		currentDepth++;
 		Node[] children = findBestNodes(father);
 		if (children.length == 1 && children[1].value == WIN)
@@ -69,10 +69,10 @@ public class AlphaBetaPruning {
 			return children[1];
 		int i;
 		for (i = 0; i < children.length; i++) {
-			globalBoard[children[i].i][children[i].j] = max ? saddam : foe;
-			Node child = alphaBetaPruning(children[i], !max);
+			globalBoard[children[i].i][children[i].j] = children[i].isSaddam? saddam : foe;
+			Node child = alphaBetaPruning(children[i]);
 			globalBoard[child.i][child.j] = MNKCellState.FREE;
-			if (max) {
+			if (children[i].isSaddam) {
 				if (currentDepth == -1 && Math.max(father.value, child.value) == child.value) {
 					// relative best child, in the end it will be the best
 					father.bestChild = child;
@@ -104,20 +104,40 @@ public class AlphaBetaPruning {
 	 * q = new PriorityQueue<Move>(8, new Comparatore());
 	 */
 	public Node[] findBestNodes(Node father) {
-		// public PriorityQueue q;
-		// q = new PriorityQueue<Move>(8, new Comparatore())
+		Node[] children;
 		Moves myMoves = new Moves();
 		checkAround(father.iParent, father.jParent, myMoves, true);
-		Moves foeMoves = new Moves();
-		checkAround(father.i, father.j, foeMoves, false);
-		return father;
+		if(myMoves.win==null) {
+			Moves foeMoves = new Moves();
+			checkAround(father.i, father.j, foeMoves, false);
+			if(foeMoves.win==null) {
+				if(myMoves.twoWin==null) {
+					if(foeMoves.twoWin==null) {
+						for(int i=0; !myMoves.q.isEmpty();i++) {
+							//vernichtungskrieg
+						}
+					}
+					else 
+						children = new Node(foeMoves.win[0], foeMoves.win[1], father.alpha, father.beta,father.isSaddam?BETA:ALPHA, father.i,father.j, !father.isSaddam) ;
+				}
+				else
+					children = new Node(foeMoves.win[0], foeMoves.win[1], !father.isSaddam,!father.isSaddam?WIN:DEFEAT);
+			}
+			else 
+				children = new Node(foeMoves.win[0], foeMoves.win[1], father.alpha, father.beta,father.isSaddam?BETA:ALPHA, father.i,father.j, !father.isSaddam);
+		}
+		else 
+			return new Node(myMoves.win[0], myMoves.win[1], !father.isSaddam,!father.isSaddam?WIN:DEFEAT);
+		return children;	
 	}
 
 	public void checkAround(int i, int j, Moves moves, boolean full) {
-		//swagger
+		PriorityQueue q;
+		if (full)
+			q = new PriorityQueue<Move>(8, new Comparatore());
 		MNKCellState player = globalBoard[i][j];
 		int length = 1, backExtra = 0, forwardExtra = 0, backCount, forwardCount;
-		boolean freeBack[] = {false, false}, freeForward[] = {false, false};
+		boolean freeBack[] = { false, false }, freeForward[] = { false, false };
 		for (backCount = 1; j - backCount >= 0 && globalBoard[i][j - backCount] == player; backCount++)
 			length++;
 		for (forwardCount = 1; j + forwardCount < n && globalBoard[i][j + forwardCount] == player; forwardCount++)
@@ -139,7 +159,10 @@ public class AlphaBetaPruning {
 			freeBack[0] = true;
 			if (j - backCount - 1 >= 0 && globalBoard[i][j - backCount - 1] == MNKCellState.FREE)
 				freeBack[1] = true;
-
+			if (full) {
+				int[] backMove = { i, j - backCount, length + backExtra };
+				q.add(backMove);
+			}
 		}
 		if (j + forwardCount < n && globalBoard[i][j + forwardCount] == MNKCellState.FREE) {
 			if (length == k - 1) {
@@ -148,7 +171,8 @@ public class AlphaBetaPruning {
 				break;
 			}
 			int rest = k - length - 1;
-			for (int c = 1; j + forwardCount + c < n && globalBoard[i][j + forwardCount + c] == player && c <= rest; c++)
+			for (int c = 1; j + forwardCount + c < n && globalBoard[i][j + forwardCount + c] == player
+					&& c <= rest; c++)
 				forwardExtra++;
 			if (length + forwardExtra == k - 1) {
 				int move[] = { i, j + forwardCount };
@@ -158,14 +182,17 @@ public class AlphaBetaPruning {
 			freeForward[0] = true;
 			if (j + forwardCount + 1 < n && globalBoard[i][j + forwardCount + 1] == MNKCellState.FREE)
 				freeForward[1] = true;
-
+			if (full) {
+				int[] forwardMove = { i, j + forwardCount, length + forwardExtra };
+				q.add(forwardMove);
+			}
 		}
 		if (length == k - 2 && freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
 			j = freeBack[1] ? j - backCount : j + forwardCount;
 			int move[] = { i, j };
-				moves.twoWin = move;
+			moves.twoWin = move;
 		}
-		length = 1; backExtra = 0; forwardExtra = 0;
+		length = 1; backExtra = 0; forwardExtra = 0; 
 		freeBack[0] = false; freeBack[1] = false; freeForward[0] = false; freeForward[1] = false;
 
 		// Vertical
@@ -190,6 +217,10 @@ public class AlphaBetaPruning {
 			freeBack[0] = true;
 			if (i - backCount - 1 >= 0 && globalBoard[i - backCount - 1][j] == MNKCellState.FREE)
 				freeBack[1] = true;
+			if (full) {
+				int[] backMove = { i - backCount, j, length + backExtra };
+				q.add(backMove);
+			}
 		}
 		if (i + forwardCount < n && globalBoard[i + forwardCount][j] == MNKCellState.FREE) {
 			if (length == k - 1) {
@@ -198,7 +229,8 @@ public class AlphaBetaPruning {
 				break;
 			}
 			int rest = k - length - 1;
-			for (int c = 1; i + forwardCount + c < n && globalBoard[i + forwardCount + c][j] == player && c <= rest; c++)
+			for (int c = 1; i + forwardCount + c < n && globalBoard[i + forwardCount + c][j] == player
+					&& c <= rest; c++)
 				forwardExtra++;
 			if (length + forwardExtra == k - 1) {
 				int move[] = { i + forwardCount, j };
@@ -208,23 +240,28 @@ public class AlphaBetaPruning {
 			freeForward[0] = true;
 			if (i + forwardCount + 1 < n && globalBoard[i + forwardCount + 1][j] == MNKCellState.FREE)
 				freeForward[1] = true;
+			if (full) {
+				int[] forwardMove = { i + forwardCount, j, length + forwardExtra };
+				q.add(forwardMove);
+			}
 		}
 		if (length == k - 2 && freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
 			i = freeBack[1] ? i - backCount : i + forwardCount;
 			int move[] = { i, j };
-				moves.twoWin = move;
+			moves.twoWin = move;
 		}
-		length = 1; backExtra = 0; forwardExtra = 0;
-		freeBack[0] = false; freeBack[1] = false; freeForward[0] = false; freeForward[1] = false;		
-		
-		//Diagonal
+		length = 1; backExtra = 0; forwardExtra = 0; 
+		freeBack[0] = false; freeBack[1] = false; freeForward[0] = false; freeForward[1] = false;
+
+		// Diagonal
 		for (backCount = 1; j - backCount >= 0 && i - backCount >= 0
 				&& globalBoard[i - backCount][j - backCount] == player; backCount++)
 			length++;
 		for (forwardCount = 1; j + forwardCount < n && i + forwardCount < n
 				&& globalBoard[i + forwardCount][j + forwardCount] == player; forwardCount++)
 			length++;
-		if (j - backCount >= 0 && i - backCount >= 0 && globalBoard[i - backCount][j - backCount] == MNKCellState.FREE) {
+		if (j - backCount >= 0 && i - backCount >= 0
+				&& globalBoard[i - backCount][j - backCount] == MNKCellState.FREE) {
 			if (length == k - 1) {
 				int move[] = { i - backCount, j - backCount };
 				moves.win = move;
@@ -243,6 +280,10 @@ public class AlphaBetaPruning {
 			if (j - backCount - 1 >= 0 && i - backCount - 1 >= 0
 					&& globalBoard[i - backCount - 1][j - backCount - 1] == MNKCellState.FREE)
 				freeBack[1] = true;
+			if (full) {
+				int[] backMove = { i - backCount, j - backCount, length + backExtra };
+				q.add(backMove);
+			}
 		}
 		if (j + forwardCount < n && i + forwardCount < n
 				&& globalBoard[i + forwardCount][j + forwardCount] == MNKCellState.FREE) {
@@ -264,17 +305,21 @@ public class AlphaBetaPruning {
 			if (j + forwardCount + 1 < n && i + forwardCount + 1 < n
 					&& globalBoard[i + forwardCount + 1][j + forwardCount + 1] == MNKCellState.FREE)
 				freeForward[1] = true;
+			if (full) {
+				int[] forwardMove = { i + forwardCount, j + forwardCount, length + forwardExtra };
+				q.add(forwardMove);
+			}
 		}
 		if (length == k - 2 && freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
 			i = freeForward[1] ? i - backCount : i + forwardCount;
 			j = freeBack[1] ? j - backCount : j + forwardCount;
 			int move[] = { i, j };
-				moves.twoWin = move;
+			moves.twoWin = move;
 		}
-		length = 1; backExtra = 0; forwardExtra = 0;
+		length = 1; backExtra = 0; forwardExtra = 0; 
 		freeBack[0] = false; freeBack[1] = false; freeForward[0] = false; freeForward[1] = false;
 
-		//Antidiagonal
+		// Antidiagonal
 		for (backCount = 1; j + backCount < n && i - backCount >= 0
 				&& globalBoard[i - backCount][j + backCount] == player; backCount++)
 			length++;
@@ -300,6 +345,10 @@ public class AlphaBetaPruning {
 			if (j + backCount + 1 >= 0 && i - backCount - 1 >= 0
 					&& globalBoard[i - backCount - 1][j + backCount - 1] == MNKCellState.FREE)
 				freeBack[1] = true;
+			if (full) {
+				int[] backMove = { i - backCount, j + backCount, length + backExtra };
+				q.add(backMove);
+			}
 		}
 		if (j - forwardCount >= 0 && i + forwardCount < n
 				&& globalBoard[i + forwardCount][j - forwardCount] == MNKCellState.FREE) {
@@ -313,7 +362,7 @@ public class AlphaBetaPruning {
 					&& globalBoard[i + forwardCount + c][j - forwardCount - c] == player && c <= rest; c++)
 				forwardExtra++;
 			if (length + forwardExtra == k - 1) {
-				int move[] = { i- forwardCount, j + forwardCount };
+				int move[] = { i - forwardCount, j + forwardCount };
 				moves.win = move;
 				break;
 			}
@@ -321,14 +370,19 @@ public class AlphaBetaPruning {
 			if (j - forwardCount - 1 < n && i + forwardCount + 1 < n
 					&& globalBoard[i + forwardCount + 1][j - forwardCount - 1] == MNKCellState.FREE)
 				freeForward[1] = true;
+			if (full) {
+				int[] forwardMove = { i + forwardCount, j - forwardCount, length + forwardExtra };
+				q.add(forwardMove);
+			}
 		}
 		if (length == k - 2 && freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
 			i = freeBack[1] ? i - backCount : i + forwardCount;
 			j = freeBack[1] ? j + backCount : j - forwardCount;
 			int move[] = { i, j };
-				moves.twoWin = move;
+			moves.twoWin = move;
 		}
-
+		if (full)
+			moves.q = q;
 	}
 
 	private void printMatrix(MNKCellState[][] matrix) {
