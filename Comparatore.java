@@ -1,6 +1,6 @@
 package mnkgame;
 import java.util.Comparator;
-public class Comparatore implements Comparator<Move> {
+public class Comparatore implements Comparator<int[]> {
 
 //what we need is the reverse natural order, hence the existence of this comparator
     @Override

@@ -4,9 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.PriorityQueue;
 
-import Test.Move;
 import mnkgame.Node;
-import mnkgame.State;
 
 public class AlphaBetaPruning {
 	private final int m, n, k;
@@ -61,12 +59,11 @@ public class AlphaBetaPruning {
 	}
 
 	private Node alphaBetaPruning(Node father) {
+		if(father.isLeaf)
+			return father;
 		currentDepth++;
 		Node[] children = findBestNodes(father);
-		if (children.length == 1 && children[1].value == WIN)
-			return children[1];
-		if (currentDepth == MAX_DEPTH)
-			return children[1];
+		
 		int i;
 		for (i = 0; i < children.length; i++) {
 			globalBoard[children[i].i][children[i].j] = children[i].isSaddam? saddam : foe;
@@ -94,15 +91,6 @@ public class AlphaBetaPruning {
 			return father;
 	}
 
-	// O(4((k-2)+ 2(k-1)))= O(12k-16)=O(12(k-4/3)), 4 axes with k-2 for the around
-	// forward and backward and k-1 for jump
-	// may be optimized breaking when length + extra + jump cell =k, in this case
-	// O(4(k))
-	/*
-	 * PriorityQueue q;
-	 * if (full)
-	 * q = new PriorityQueue<Move>(8, new Comparatore());
-	 */
 	public Node[] findBestNodes(Node father) {
 		Node[] children;
 		Moves myMoves = new Moves();
@@ -113,28 +101,41 @@ public class AlphaBetaPruning {
 			if(foeMoves.win==null) {
 				if(myMoves.twoWin==null) {
 					if(foeMoves.twoWin==null) {
-						for(int i=0; !myMoves.q.isEmpty();i++) {
-							//vernichtungskrieg
+						children = new Node[myMoves.q.size()];
+						if(currentDepth==MAX_DEPTH-1) {
+							for(int i=0; !myMoves.q.isEmpty();i++) {
+								int[] m = myMoves.q.remove();
+								Node child;		
+								child = new Node(m[0], m[1], !father.isSaddam, 0);//getHeuristicValue						
+								children[i] = child;
+							}
+						}
+						else {
+							for(int i=0; !myMoves.q.isEmpty();i++) {
+								int[] m = myMoves.q.remove();
+								Node child;						
+								child = new Node(m[0], m[1], father.alpha, father.beta,father.isSaddam?BETA:ALPHA, father.i,father.j, !father.isSaddam);								
+								children[i] = child;
+							}
 						}
 					}
 					else 
-						children = new Node(foeMoves.win[0], foeMoves.win[1], father.alpha, father.beta,father.isSaddam?BETA:ALPHA, father.i,father.j, !father.isSaddam) ;
+						children = new Node[]{ new Node(foeMoves.win[0], foeMoves.win[1], father.alpha, father.beta,father.isSaddam?BETA:ALPHA, father.i,father.j, !father.isSaddam) };
 				}
 				else
-					children = new Node(foeMoves.win[0], foeMoves.win[1], !father.isSaddam,!father.isSaddam?WIN:DEFEAT);
+					children = new Node[]{ new Node(foeMoves.win[0], foeMoves.win[1], !father.isSaddam,!father.isSaddam?WIN:DEFEAT) };
 			}
 			else 
-				children = new Node(foeMoves.win[0], foeMoves.win[1], father.alpha, father.beta,father.isSaddam?BETA:ALPHA, father.i,father.j, !father.isSaddam);
+				children = new Node[]{ new Node(foeMoves.win[0], foeMoves.win[1], father.alpha, father.beta,father.isSaddam?BETA:ALPHA, father.i,father.j, !father.isSaddam) };
 		}
 		else 
-			return new Node(myMoves.win[0], myMoves.win[1], !father.isSaddam,!father.isSaddam?WIN:DEFEAT);
+			children = new Node[]{ new Node(myMoves.win[0], myMoves.win[1], !father.isSaddam,!father.isSaddam?WIN:DEFEAT) };
 		return children;	
 	}
 
 	public void checkAround(int i, int j, Moves moves, boolean full) {
-		PriorityQueue q;
-		if (full)
-			q = new PriorityQueue<Move>(8, new Comparatore());
+		PriorityQueue<int[]> q;
+		q = new PriorityQueue<int[]>(8, new Comparatore());
 		MNKCellState player = globalBoard[i][j];
 		int length = 1, backExtra = 0, forwardExtra = 0, backCount, forwardCount;
 		boolean freeBack[] = { false, false }, freeForward[] = { false, false };
@@ -146,7 +147,7 @@ public class AlphaBetaPruning {
 			if (length == k - 1) {
 				int move[] = { i, j - backCount };
 				moves.win = move;
-				break;
+				return;
 			}
 			int rest = k - length - 1;
 			for (int c = 1; j - backCount - c >= 0 && globalBoard[i][j - backCount - c] == player && c <= rest; c++)
@@ -154,7 +155,7 @@ public class AlphaBetaPruning {
 			if (length + backExtra == k - 1) {
 				int move[] = { i, j - backCount };
 				moves.win = move;
-				break;
+				return;
 			}
 			freeBack[0] = true;
 			if (j - backCount - 1 >= 0 && globalBoard[i][j - backCount - 1] == MNKCellState.FREE)
@@ -168,7 +169,7 @@ public class AlphaBetaPruning {
 			if (length == k - 1) {
 				int move[] = { i, j + forwardCount };
 				moves.win = move;
-				break;
+				return;
 			}
 			int rest = k - length - 1;
 			for (int c = 1; j + forwardCount + c < n && globalBoard[i][j + forwardCount + c] == player
@@ -177,7 +178,7 @@ public class AlphaBetaPruning {
 			if (length + forwardExtra == k - 1) {
 				int move[] = { i, j + forwardCount };
 				moves.win = move;
-				break;
+				return;
 			}
 			freeForward[0] = true;
 			if (j + forwardCount + 1 < n && globalBoard[i][j + forwardCount + 1] == MNKCellState.FREE)
@@ -204,7 +205,7 @@ public class AlphaBetaPruning {
 			if (length == k - 1) {
 				int move[] = { i - backCount, j };
 				moves.win = move;
-				break;
+				return;
 			}
 			int rest = k - length - 1;
 			for (int c = 1; i - backCount - c >= 0 && globalBoard[i - backCount - c][j] == player && c <= rest; c++)
@@ -212,7 +213,7 @@ public class AlphaBetaPruning {
 			if (length + backExtra == k - 1) {
 				int move[] = { i - backCount, j };
 				moves.win = move;
-				break;
+				return;
 			}
 			freeBack[0] = true;
 			if (i - backCount - 1 >= 0 && globalBoard[i - backCount - 1][j] == MNKCellState.FREE)
@@ -226,7 +227,7 @@ public class AlphaBetaPruning {
 			if (length == k - 1) {
 				int move[] = { i + forwardCount, j };
 				moves.win = move;
-				break;
+				return;
 			}
 			int rest = k - length - 1;
 			for (int c = 1; i + forwardCount + c < n && globalBoard[i + forwardCount + c][j] == player
@@ -235,7 +236,7 @@ public class AlphaBetaPruning {
 			if (length + forwardExtra == k - 1) {
 				int move[] = { i + forwardCount, j };
 				moves.win = move;
-				break;
+				return;
 			}
 			freeForward[0] = true;
 			if (i + forwardCount + 1 < n && globalBoard[i + forwardCount + 1][j] == MNKCellState.FREE)
@@ -265,7 +266,7 @@ public class AlphaBetaPruning {
 			if (length == k - 1) {
 				int move[] = { i - backCount, j - backCount };
 				moves.win = move;
-				break;
+				return;
 			}
 			int rest = k - length - 1;
 			for (int c = 1; j - backCount - c >= 0 && i - backCount - c >= 0
@@ -274,7 +275,7 @@ public class AlphaBetaPruning {
 			if (length + backExtra == k - 1) {
 				int move[] = { i - backCount, j - backCount };
 				moves.win = move;
-				break;
+				return;
 			}
 			freeBack[0] = true;
 			if (j - backCount - 1 >= 0 && i - backCount - 1 >= 0
@@ -290,7 +291,7 @@ public class AlphaBetaPruning {
 			if (length == k - 1) {
 				int move[] = { i + forwardCount, j + forwardCount };
 				moves.win = move;
-				break;
+				return;
 			}
 			int rest = k - length - 1;
 			for (int c = 1; j + forwardCount + c < n && i + forwardCount + c < n
@@ -299,7 +300,7 @@ public class AlphaBetaPruning {
 			if (length + forwardExtra == k - 1) {
 				int move[] = { i + forwardCount, j + forwardCount };
 				moves.win = move;
-				break;
+				return;
 			}
 			freeForward[0] = true;
 			if (j + forwardCount + 1 < n && i + forwardCount + 1 < n
@@ -330,7 +331,7 @@ public class AlphaBetaPruning {
 			if (length == k - 1) {
 				int move[] = { i - backCount, j + backCount };
 				moves.win = move;
-				break;
+				return;
 			}
 			int rest = k - length - 1;
 			for (int c = 1; j + backCount + c < n && i - backCount - c >= 0
@@ -339,7 +340,7 @@ public class AlphaBetaPruning {
 			if (length + backExtra == k - 1) {
 				int move[] = { i - backCount, j + backCount };
 				moves.win = move;
-				break;
+				return;
 			}
 			freeBack[0] = true;
 			if (j + backCount + 1 >= 0 && i - backCount - 1 >= 0
@@ -355,7 +356,7 @@ public class AlphaBetaPruning {
 			if (length == k - 1) {
 				int move[] = { i - forwardCount, j + forwardCount };
 				moves.win = move;
-				break;
+				return;
 			}
 			int rest = k - length - 1;
 			for (int c = 1; j - forwardCount - c >= 0 && i + forwardCount + c < n
@@ -364,7 +365,7 @@ public class AlphaBetaPruning {
 			if (length + forwardExtra == k - 1) {
 				int move[] = { i - forwardCount, j + forwardCount };
 				moves.win = move;
-				break;
+				return;
 			}
 			freeForward[0] = true;
 			if (j - forwardCount - 1 < n && i + forwardCount + 1 < n

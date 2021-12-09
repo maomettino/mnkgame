@@ -30,8 +30,7 @@ public class SaddamHussein implements MNKPlayer {
 				return FC[0];
 			MNKCell saddamLastCell = MC[MC.length - 2];
 			MNKCell foeLastCell = MC[MC.length - 1];
-			abp.getMove(saddamLastCell, foeLastCell);
-			return FC[0];
+			return abp.getMove(saddamLastCell, foeLastCell);
 		}
 		// When it's my first turn
 		else {
