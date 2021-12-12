@@ -71,11 +71,21 @@ public class AlphaBetaPruning {
 				b[i][j] = globalBoard[i][j];
 		Node father = new Node(foeLastCell.i, foeLastCell.j, ALPHA, BETA, ALPHA, saddamlastRegularMove, foelastRegularMove,
 				false);
+		try {
 		Node node = alphaBetaPruning(father);
 		// System.out.println("Benito Mussolini "+ node.i);
 		saddamlastRegularMove = node.myLastRegularMove;
 		foelastRegularMove = node.foeLastRegularMove;
-		return new MNKCell(node.i, node.j);
+		if(node != null)
+			return new MNKCell(node.i, node.j);
+		return new MNKCell(-1, -1);			
+		} catch (Exception ArrayIndexOutOfBoundsException) {
+			//TODO: handle exception
+			System.out.println("c'e' stata un eccezione puttana la madonna");
+		}
+		saddamlastRegularMove = new int[]{saddamLastCell.i,saddamLastCell.j};
+		foelastRegularMove = new int[]{foeLastCell.i,foeLastCell.j};
+		return new MNKCell(-1, -1);	
 	}
 
 	private Node alphaBetaPruning(Node father) {
