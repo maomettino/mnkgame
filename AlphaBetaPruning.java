@@ -25,7 +25,8 @@ public class AlphaBetaPruning {
 	private MNKCellState[][] globalBoard;
 	private int[] saddamlastRegularMove;
 	private int[] foelastRegularMove;
-//FOR SOME REASON THE K-2 MOVES SOMETIMES ARE OUT OF BOUNDS
+
+	// FOR SOME REASON THE K-2 MOVES SOMETIMES ARE OUT OF BOUNDS
 	public AlphaBetaPruning(int m, int n, int k, boolean first, int timeout_in_secs) {
 		currentDepth = -1;
 		saddamMoves = 0;
@@ -54,38 +55,41 @@ public class AlphaBetaPruning {
 		foeMoves++;
 		globalBoard[saddamLastCell.i][saddamLastCell.j] = saddam;
 		globalBoard[foeLastCell.i][foeLastCell.j] = foe;
-		if( saddamlastRegularMove == null) {
+		if (saddamlastRegularMove == null) {
 			saddamlastRegularMove = new int[2];
 			saddamlastRegularMove[0] = saddamLastCell.i;
 			saddamlastRegularMove[1] = saddamLastCell.j;
 		}
-		if(foelastRegularMove == null) {
+		if (foelastRegularMove == null) {
 			foelastRegularMove = new int[2];
 			foelastRegularMove[0] = foeLastCell.i;
 			foelastRegularMove[1] = foeLastCell.j;
 		}
-		System.out.println("swag "+saddamlastRegularMove[0]);
+		// System.out.println("swag "+saddamlastRegularMove[0]);
 		// make sure that local board matches the global one
 		for (int i = 0; i < m; i++)
 			for (int j = 0; j < n; j++)
 				b[i][j] = globalBoard[i][j];
-		Node father = new Node(foeLastCell.i, foeLastCell.j, ALPHA, BETA, ALPHA, saddamlastRegularMove, foelastRegularMove,
+		Node father = new Node(foeLastCell.i, foeLastCell.j, ALPHA, BETA, ALPHA, saddamlastRegularMove,
+				foelastRegularMove,
 				false);
-		try {
+		// try {
 		Node node = alphaBetaPruning(father);
 		// System.out.println("Benito Mussolini "+ node.i);
 		saddamlastRegularMove = node.myLastRegularMove;
 		foelastRegularMove = node.foeLastRegularMove;
-		if(node != null)
+		if (node != null)
 			return new MNKCell(node.i, node.j);
-		return new MNKCell(-1, -1);			
-		} catch (Exception ArrayIndexOutOfBoundsException) {
-			//TODO: handle exception
-			System.out.println("c'e' stata un eccezione puttana la madonna");
-		}
-		saddamlastRegularMove = new int[]{saddamLastCell.i,saddamLastCell.j};
-		foelastRegularMove = new int[]{foeLastCell.i,foeLastCell.j};
-		return new MNKCell(-1, -1);	
+		return new MNKCell(-1, -1);
+		/*
+		 * } catch (Exception ArrayIndexOutOfBoundsException) {
+		 * //TODO: handle exception
+		 * System.out.println("c'e' stata un eccezione puttana la madonna");
+		 * }
+		 */
+		// saddamlastRegularMove = new int[]{saddamLastCell.i,saddamLastCell.j};
+		// foelastRegularMove = new int[]{foeLastCell.i,foeLastCell.j};
+		// return new MNKCell(-1, -1);
 	}
 
 	private Node alphaBetaPruning(Node father) {
@@ -94,8 +98,8 @@ public class AlphaBetaPruning {
 		currentDepth++;
 		Node[] children = findBestNodes(father);
 		printMatrix(b);
-		for(Node child: children) {
-			System.out.println("i: "+child.i + " j: " + child.j);
+		for (Node child : children) {
+			System.out.println("i: " + child.i + " j: " + child.j);
 		}
 		// System.out.println(children);
 		for (int i = 0; i < children.length; i++) {
@@ -126,7 +130,7 @@ public class AlphaBetaPruning {
 		currentDepth--;
 		if (currentDepth == -1) {
 			// System.out.println("heil hitler best "+father.bestChild.i);
-			return children[0];//father.bestChild;
+			return children[0];// father.bestChild;
 		}
 
 		else {
@@ -143,7 +147,7 @@ public class AlphaBetaPruning {
 		// System.out.println(myMoves.q.toArray());
 		if (myMoves.win == null) {
 			Moves foeMoves = new Moves();
-			//System.out.println(currentDepth);
+			// System.out.println(currentDepth);
 			checkAround(father.foeLastRegularMove[0], father.foeLastRegularMove[1], foeMoves, false);
 
 			// System.out.println(foeMoves.q.toArray());
@@ -155,7 +159,7 @@ public class AlphaBetaPruning {
 							for (int i = 0; !myMoves.q.isEmpty(); i++) {
 								int[] m = myMoves.q.remove();
 								Node child;
-								System.out.println("slaques primo i : "+m[0]+ " j: "+ m[1]);
+								// System.out.println("slaques primo i : "+m[0]+ " j: "+ m[1]);
 								child = new Node(m[0], m[1], !father.isSaddam, m[2]);// getHeuristicValue
 								children[i] = child;
 							}
@@ -164,27 +168,32 @@ public class AlphaBetaPruning {
 							for (int i = 0; !myMoves.q.isEmpty(); i++) {
 								int[] m = myMoves.q.remove();
 								Node child;
-								System.out.println("slaques secondo i : "+m[0]+ " j: "+ m[1]);
+								// System.out.println("slaques secondo i : "+m[0]+ " j: "+ m[1]);
 								child = new Node(m[0], m[1], father.alpha, father.beta, father.isSaddam ? BETA : ALPHA,
-										new int[]{m[0],m[1]}, father.foeLastRegularMove, !father.isSaddam);
+										new int[] { m[0], m[1] }, father.foeLastRegularMove, !father.isSaddam);
 								children[i] = child;
 							}
 							// System.out.println("dai cazzo");
 						}
 					} else {
-						System.out.println("slaques terzo i : "+foeMoves.twoWin[0]+ " j: "+ foeMoves.twoWin[1]);
-						children = new Node[] { new Node(foeMoves.twoWin[0], foeMoves.twoWin[1], father.alpha, father.beta,
-								father.isSaddam ? BETA : ALPHA, father.myLastRegularMove, father.foeLastRegularMove, !father.isSaddam) };
-						}
+						// System.out.println("slaques terzo i : "+foeMoves.twoWin[0]+ " j: "+
+						// foeMoves.twoWin[1]);
+						children = new Node[] {
+								new Node(foeMoves.twoWin[0], foeMoves.twoWin[1], father.alpha, father.beta,
+										father.isSaddam ? BETA : ALPHA, father.myLastRegularMove,
+										father.foeLastRegularMove, !father.isSaddam) };
+					}
 				} else {
-					System.out.println("slaques quarto i : "+myMoves.twoWin[0]+ " j: "+ myMoves.twoWin[1]);					
+					// System.out.println("slaques quarto i : "+myMoves.twoWin[0]+ " j: "+
+					// myMoves.twoWin[1]);
 					children = new Node[] { new Node(myMoves.twoWin[0], myMoves.twoWin[1], !father.isSaddam,
 							!father.isSaddam ? WIN : DEFEAT) };
 				}
-					
+
 			} else
 				children = new Node[] { new Node(foeMoves.win[0], foeMoves.win[1], father.alpha, father.beta,
-						father.isSaddam ? BETA : ALPHA, father.myLastRegularMove, father.foeLastRegularMove, !father.isSaddam) };
+						father.isSaddam ? BETA : ALPHA, father.myLastRegularMove, father.foeLastRegularMove,
+						!father.isSaddam) };
 		} else
 			children = new Node[] {
 					new Node(myMoves.win[0], myMoves.win[1], !father.isSaddam, !father.isSaddam ? WIN : DEFEAT) };
@@ -197,16 +206,18 @@ public class AlphaBetaPruning {
 		q = new PriorityQueue<int[]>(8, new Comparatore());
 		MNKCellState player = b[i][j];
 		int length = 1, backExtra = 0, forwardExtra = 0, backCount, forwardCount;
-		boolean freeBack[] = { false, false }, freeForward[] = { false, false }, freeExtraForward = false, freeExtraBack = false;
-		 System.out.println("niggers");
+		boolean freeBack[] = { false, false }, freeForward[] = { false, false }, freeExtraForward = false,
+				freeExtraBack = false;
+		System.out.println("Starting check around for depth " + currentDepth);
 		for (backCount = 1; j - backCount >= 0 && b[i][j - backCount] == player; backCount++)
 			length++;
 		for (forwardCount = 1; j + forwardCount < n && b[i][j + forwardCount] == player; forwardCount++)
 			length++;
-		System.out.println("forwardCount " + forwardCount);
+		// System.out.println("forwardCount " + forwardCount);
 		if (j - backCount >= 0 && b[i][j - backCount] == MNKCellState.FREE) {
+			System.out.println("checking free back H cell " + i + (j - backCount));
 			if (length == k - 1) {
-				System.out.println("i : "+i+ " j: "+ (j - backCount));
+				System.out.println("winning back H move " + i + (j - backCount));
 				int move[] = { i, j - backCount };
 				moves.win = move;
 				return;
@@ -215,6 +226,7 @@ public class AlphaBetaPruning {
 			for (int c = 1; j - backCount - c >= 0 && b[i][j - backCount - c] == player && c <= rest; c++)
 				backExtra++;
 			if (length + backExtra == k - 1) {
+				System.out.println("winning back H move " + i + (j - backCount));
 				int move[] = { i, j - backCount };
 				moves.win = move;
 				return;
@@ -222,18 +234,19 @@ public class AlphaBetaPruning {
 			freeBack[0] = true;
 			if (j - backCount - 1 >= 0 && b[i][j - backCount - 1] == MNKCellState.FREE)
 				freeBack[1] = true;
-			if (j - backCount - backExtra -1 >=0 && b[i][j - backCount - backExtra -1 ] ==MNKCellState.FREE)
+			if (j - backCount - backExtra - 1 >= 0 && b[i][j - backCount - backExtra - 1] == MNKCellState.FREE)
 				freeExtraBack = true;
 			if (full) {
 				int[] backMove = { i, j - backCount, length + backExtra };
-				 System.out.println("mossa back H "+backMove[0] + backMove[1]);
+				System.out.println("adding to the queue the back H move " + backMove[0] + backMove[1]);
 				q.add(backMove);
 			}
 		}
-		System.out.println(" j " + j + " forwardCount" + forwardCount);
+		// System.out.println(" j " + j + " forwardCount" + forwardCount);
 		if (j + forwardCount < n && b[i][j + forwardCount] == MNKCellState.FREE) {
-			//System.out.println("zoccolajhuyuyusù");
+			System.out.println("checking free forward H cell " + i + (j + forwardCount));
 			if (length == k - 1) {
+				System.out.println("winning H forward move " + i + (j + forwardCount));
 				int move[] = { i, j + forwardCount };
 				moves.win = move;
 				return;
@@ -243,54 +256,63 @@ public class AlphaBetaPruning {
 			for (int c = 1; j + forwardCount + c < n && b[i][j + forwardCount + c] == player
 					&& c <= rest; c++)
 				forwardExtra++;
-			System.out.println("length " + length + " forwardExtra " + forwardExtra);
+			// System.out.println("length " + length + " forwardExtra " + forwardExtra);
 			if (length + forwardExtra == k - 1) {
-				//System.out.println("zoccolasù");
+				System.out.println("winning forward H move " + i + (j + forwardCount));
 				int move[] = { i, j + forwardCount };
 				moves.win = move;
 				return;
 			}
 			freeForward[0] = true;
-			if (j + forwardCount + 1 < n && b[i][j + forwardCount + 1] ==MNKCellState.FREE )
+			if (j + forwardCount + 1 < n && b[i][j + forwardCount + 1] == MNKCellState.FREE)
 				freeForward[1] = true;
-			if (j + forwardCount + forwardExtra + 1 < n && b[i][j + forwardCount + forwardExtra + 1] ==MNKCellState.FREE )
+			if (j + forwardCount + forwardExtra + 1 < n
+					&& b[i][j + forwardCount + forwardExtra + 1] == MNKCellState.FREE)
 				freeExtraForward = true;
-			 System.out.println("puttana");
 			if (full) {
 				int[] forwardMove = { i, j + forwardCount, length + forwardExtra };
 				q.add(forwardMove);
-				 System.out.println("mossa forward H "+forwardMove[0] + forwardMove[1]);
+				System.out.println("adding to queue move forward H " + forwardMove[0] + forwardMove[1]);
 
 			}
 		}
 
-		if (length == k - 2 && freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
-			j = freeBack[1] ? j - backCount : j + forwardCount;
-			int move[] = { i, j };
-			System.out.println("jason : "+j);
-			moves.twoWin = move;
+		if (length == k - 2) {
+			if (freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
+				j = freeBack[1] ? j - backCount : j + forwardCount;
+				int move[] = { i, j };
+				System.out.println("found 2 win H cell : " + i + j);
+				moves.twoWin = move;
+			}
 		}
-		System.out.println("odio i negri");
+		// System.out.println("odio i negri");
+		else {
+			if (freeBack[0] && length + backExtra == k - 2 && freeForward[0] && freeExtraBack) {
+				System.out.println("found 2 win back H move " + i + (j - backCount));
+				int move[] = { i, j - backCount };
+				moves.twoWin = move;
+				return;
+			}
+			// System.out.println("e le donne");
 
-		if ( freeBack[0] && length + backExtra == k - 2 && freeForward[0] && freeExtraBack ) {
-			System.out.println("zoccolasù");
-			int move[] = { i, j - backCount};
-			moves.twoWin = move;
-			return;
+			if (freeForward[0] && length + forwardExtra == k - 2 && freeBack[0] && freeExtraForward) {
+				System.out.println("found 2 win forward H move " + i + (j + forwardCount));
+				int move[] = { i, j + forwardCount };
+				moves.twoWin = move;
+				return;
+			}
 		}
-		System.out.println("e le donne");
+		// System.out.println("dio maledetto");
 
-		if ( freeForward[0] && length + forwardExtra == k - 2 && freeBack[0] && freeExtraForward ) {
-			System.out.println("zoccolaccia j: "+j+" forwardCount "+forwardCount);
-			
-			int move[] = { i, j + forwardCount };
-			moves.twoWin = move;
-			return;
-		}
-		System.out.println("dio maledetto");
-
-		length = 1; backExtra = 0; forwardExtra = 0;
-		freeBack[0] = false; freeBack[1] = false; freeForward[0] = false; freeForward[1] = false; freeExtraForward = false; freeExtraBack = false;
+		length = 1;
+		backExtra = 0;
+		forwardExtra = 0;
+		freeBack[0] = false;
+		freeBack[1] = false;
+		freeForward[0] = false;
+		freeForward[1] = false;
+		freeExtraForward = false;
+		freeExtraBack = false;
 		// Vertical
 		for (backCount = 1; i - backCount >= 0 && b[i - backCount][j] == player; backCount++)
 			length++;
@@ -313,7 +335,7 @@ public class AlphaBetaPruning {
 			freeBack[0] = true;
 			if (i - backCount - 1 >= 0 && b[i - backCount - 1][j] == MNKCellState.FREE)
 				freeBack[1] = true;
-			if (i - backCount - backExtra -1 >=0 && b[i - backCount - backExtra -1][j] ==MNKCellState.FREE)
+			if (i - backCount - backExtra - 1 >= 0 && b[i - backCount - backExtra - 1][j] == MNKCellState.FREE)
 				freeExtraBack = true;
 			if (full) {
 				int[] backMove = { i - backCount, j, length + backExtra };
@@ -338,33 +360,44 @@ public class AlphaBetaPruning {
 			freeForward[0] = true;
 			if (i + forwardCount + 1 < n && b[i + forwardCount + 1][j] == MNKCellState.FREE)
 				freeForward[1] = true;
-			if (i + forwardCount + forwardExtra + 1 < n && b[i + forwardCount + forwardExtra + 1][j] ==MNKCellState.FREE )
+			if (i + forwardCount + forwardExtra + 1 < n
+					&& b[i + forwardCount + forwardExtra + 1][j] == MNKCellState.FREE)
 				freeExtraForward = true;
 			if (full) {
 				int[] forwardMove = { i + forwardCount, j, length + forwardExtra };
 				q.add(forwardMove);
 			}
 		}
-		if (length == k - 2 && freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
-			i = freeBack[1] ? i - backCount : i + forwardCount;
-			int move[] = { i, j };
-			moves.twoWin = move;
+		if (length == k - 2) {
+			if (freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
+				i = freeBack[1] ? i - backCount : i + forwardCount;
+				int move[] = { i, j };
+				moves.twoWin = move;
+			}
+		} else {
+			if (freeBack[0] && length + backExtra == k - 2 && freeForward[0] && freeExtraBack) {
+				// System.out.println("zoccolasjjjjjjù");
+				int move[] = { i - backCount, j };
+				moves.twoWin = move;
+				return;
+			}
+			if (freeForward[0] && length + forwardExtra == k - 2 && freeBack[0] && freeExtraForward) {
+				// System.out.println("zoccolashhhhù i "+i + "+ forwardCount "+forwardCount);
+				int move[] = { i + forwardCount, j };
+				moves.twoWin = move;
+				return;
+			}
 		}
-		if ( freeBack[0] && length + backExtra == k - 2 && freeForward[0] && freeExtraBack ) {
-			System.out.println("zoccolasjjjjjjù");
-			int move[] = { i - backCount, j };
-			moves.twoWin = move;
-			return;
-		}
-		if ( freeForward[0] && length + forwardExtra == k - 2 && freeBack[0] && freeExtraForward ) {
-			System.out.println("zoccolashhhhù i "+i + "+ forwardCount "+forwardCount);
-			int move[] = { i + forwardCount,j };
-			moves.twoWin = move;
-			return;
-		}
-		length = 1; backExtra = 0; forwardExtra = 0;
-		freeBack[0] = false; freeBack[1] = false; freeForward[0] = false; freeForward[1] = false;freeExtraForward = false; freeExtraBack = false;
-		System.out.println("odio la nigeria");
+		length = 1;
+		backExtra = 0;
+		forwardExtra = 0;
+		freeBack[0] = false;
+		freeBack[1] = false;
+		freeForward[0] = false;
+		freeForward[1] = false;
+		freeExtraForward = false;
+		freeExtraBack = false;
+		// System.out.println("odio la nigeria");
 
 		// Diagonal
 		for (backCount = 1; j - backCount >= 0 && i - backCount >= 0
@@ -393,7 +426,8 @@ public class AlphaBetaPruning {
 			if (j - backCount - 1 >= 0 && i - backCount - 1 >= 0
 					&& b[i - backCount - 1][j - backCount - 1] == MNKCellState.FREE)
 				freeBack[1] = true;
-			if (j - backCount - backExtra -1 >=0 && i - backCount - backExtra -1 >=0 && b[i - backCount -backExtra -1][j - backCount - backExtra -1 ] ==MNKCellState.FREE)
+			if (j - backCount - backExtra - 1 >= 0 && i - backCount - backExtra - 1 >= 0
+					&& b[i - backCount - backExtra - 1][j - backCount - backExtra - 1] == MNKCellState.FREE)
 				freeExtraBack = true;
 			if (full) {
 				int[] backMove = { i - backCount, j - backCount, length + backExtra };
@@ -420,34 +454,45 @@ public class AlphaBetaPruning {
 			if (j + forwardCount + 1 < n && i + forwardCount + 1 < n
 					&& b[i + forwardCount + 1][j + forwardCount + 1] == MNKCellState.FREE)
 				freeForward[1] = true;
-			if (j + forwardCount + forwardExtra + 1 < n && i + forwardCount + forwardExtra + 1 <n && b[i + forwardCount + forwardExtra +1][j + forwardCount + forwardExtra + 1] ==MNKCellState.FREE )
+			if (j + forwardCount + forwardExtra + 1 < n && i + forwardCount + forwardExtra + 1 < n
+					&& b[i + forwardCount + forwardExtra + 1][j + forwardCount + forwardExtra + 1] == MNKCellState.FREE)
 				freeExtraForward = true;
 			if (full) {
 				int[] forwardMove = { i + forwardCount, j + forwardCount, length + forwardExtra };
 				q.add(forwardMove);
 			}
 		}
-		if (length == k - 2 && freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
-			i = freeForward[1] ? i - backCount : i + forwardCount;
-			j = freeBack[1] ? j - backCount : j + forwardCount;
-			int move[] = { i, j };
-			moves.twoWin = move;
+		if (length == k - 2) {
+			if (freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
+				i = freeForward[1] ? i - backCount : i + forwardCount;
+				j = freeBack[1] ? j - backCount : j + forwardCount;
+				int move[] = { i, j };
+				moves.twoWin = move;
+			}
+		} else {
+			if (freeBack[0] && length + backExtra == k - 2 && freeForward[0] && freeExtraBack) {
+				// System.out.println("zoccolasgggggggù");
+				int move[] = { i - backCount, j - backCount };
+				moves.twoWin = move;
+				return;
+			}
+			if (freeForward[0] && length + forwardExtra == k - 2 && freeBack[0] && freeExtraForward) {
+				// System.out.println("zoccolasttttttù");
+				int move[] = { i + forwardCount, j + forwardCount };
+				moves.twoWin = move;
+				return;
+			}
 		}
-		if ( freeBack[0] && length + backExtra == k - 2 && freeForward[0] && freeExtraBack ) {
-			System.out.println("zoccolasgggggggù");
-			int move[] = { i - backCount, j - backCount };
-			moves.twoWin = move;
-			return;
-		}
-		if ( freeForward[0] && length + forwardExtra == k - 2 && freeBack[0] && freeExtraForward ) {
-			System.out.println("zoccolasttttttù");
-			int move[] = { i + forwardCount, j + forwardCount };
-			moves.twoWin = move;
-			return;
-		}
-		length = 1; backExtra = 0; forwardExtra = 0;
-		freeBack[0] = false; freeBack[1] = false; freeForward[0] = false; freeForward[1] = false;freeExtraForward = false; freeExtraBack = false;
-		System.out.println("mi masturbo sulle loli");
+		length = 1;
+		backExtra = 0;
+		forwardExtra = 0;
+		freeBack[0] = false;
+		freeBack[1] = false;
+		freeForward[0] = false;
+		freeForward[1] = false;
+		freeExtraForward = false;
+		freeExtraBack = false;
+		// System.out.println("mi masturbo sulle loli");
 
 		// Antidiagonal
 		for (backCount = 1; j + backCount < n && i - backCount >= 0
@@ -456,7 +501,7 @@ public class AlphaBetaPruning {
 		for (forwardCount = 1; j - forwardCount >= 0 && i + forwardCount < n
 				&& b[i + forwardCount][j - forwardCount] == player; forwardCount++)
 			length++;
-			System.out.println("jeff bezos");
+		// System.out.println("jeff bezos");
 
 		if (j + backCount < n && i - backCount >= 0 && b[i - backCount][j + backCount] == MNKCellState.FREE) {
 			if (length == k - 1) {
@@ -477,18 +522,19 @@ public class AlphaBetaPruning {
 			if (j + backCount + 1 >= 0 && i - backCount - 1 >= 0
 					&& b[i - backCount - 1][j + backCount - 1] == MNKCellState.FREE)
 				freeBack[1] = true;
-			if (i - backCount - backExtra -1 >=0 && j + backCount + backExtra +1 <n && b[i - backCount - backExtra -1][j + backCount + backExtra +1 ] ==MNKCellState.FREE)
+			if (i - backCount - backExtra - 1 >= 0 && j + backCount + backExtra + 1 < n
+					&& b[i - backCount - backExtra - 1][j + backCount + backExtra + 1] == MNKCellState.FREE)
 				freeExtraBack = true;
 			if (full) {
 				int[] backMove = { i - backCount, j + backCount, length + backExtra };
 				q.add(backMove);
 			}
 		}
-		System.out.println("no non vero");
+		// System.out.println("no non vero");
 
 		if (j - forwardCount >= 0 && i + forwardCount < n
 				&& b[i + forwardCount][j - forwardCount] == MNKCellState.FREE) {
-					System.out.println("chill");
+			// System.out.println("chill");
 
 			if (length == k - 1) {
 				int move[] = { i - forwardCount, j + forwardCount };
@@ -510,42 +556,48 @@ public class AlphaBetaPruning {
 			if (j - forwardCount - 1 >= 0 && i + forwardCount + 1 < n
 					&& b[i + forwardCount + 1][j - forwardCount - 1] == MNKCellState.FREE)
 				freeForward[1] = true;
-			if (i + forwardCount + forwardExtra + 1 < n && j - forwardCount -forwardExtra -1 >=0 && b[i+ forwardCount + forwardExtra +1][j - forwardCount - forwardExtra - 1] ==MNKCellState.FREE )
+			if (i + forwardCount + forwardExtra + 1 < n && j - forwardCount - forwardExtra - 1 >= 0
+					&& b[i + forwardCount + forwardExtra + 1][j - forwardCount - forwardExtra - 1] == MNKCellState.FREE)
 				freeExtraForward = true;
-			 System.out.println("are disgusting");
+			// System.out.println("are disgusting");
 			if (full) {
 				int[] forwardMove = { i + forwardCount, j - forwardCount, length + forwardExtra };
 				q.add(forwardMove);
 			}
 		}
-		System.out.println("odio il congo");
+		// System.out.println("odio il congo");
 
-		if (length == k - 2 && freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
-			i = freeBack[1] ? i - backCount : i + forwardCount;
-			j = freeBack[1] ? j + backCount : j - forwardCount;
-			int move[] = { i, j };
-			moves.twoWin = move;
+		if (length == k - 2) {
+			if (freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
+				i = freeBack[1] ? i - backCount : i + forwardCount;
+				j = freeBack[1] ? j + backCount : j - forwardCount;
+				int move[] = { i, j };
+				moves.twoWin = move;
+			}
+		} else {
+			if (freeBack[0] && length + backExtra == k - 2 && freeForward[0] && freeExtraBack) {
+				// System.out.println("zoccolasgggggggù");
+				int move[] = { i - backCount, j + backCount };
+				moves.twoWin = move;
+				return;
+			}
+			if (freeForward[0] && length + forwardExtra == k - 2 && freeBack[0] && freeExtraForward) {
+				// System.out.println("zoccolasttttttù");
+				int move[] = { i + forwardCount, j - forwardCount };
+				moves.twoWin = move;
+				return;
+			}
 		}
-		if ( freeBack[0] && length + backExtra == k - 2 && freeForward[0] && freeExtraBack ) {
-			System.out.println("zoccolasgggggggù");
-			int move[] = { i - backCount, j + backCount };
-			moves.twoWin = move;
-			return;
-		}
-		if ( freeForward[0] && length + forwardExtra == k - 2 && freeBack[0] && freeExtraForward ) {
-			System.out.println("zoccolasttttttù");
-			int move[] = { i + forwardCount, j - forwardCount };
-			moves.twoWin = move;
-			return;
-		}
-		System.out.println("and filthy");
+		// òòSystem.out.println("and filthy");
 		if (full)
 			moves.q = q;
-		//if (q.isEmpty())
-		/*	System.out.println("porcodio");
-		q.forEach(e -> {
-			System.out.println("i: " + e[0] + " j: " + e[1] + " length: " + e[2]);
-		});*/
+		// if (q.isEmpty())
+		/*
+		 * System.out.println("porcodio");
+		 * q.forEach(e -> {
+		 * System.out.println("i: " + e[0] + " j: " + e[1] + " length: " + e[2]);
+		 * });
+		 */
 	}
 
 	public void test() {
@@ -559,9 +611,9 @@ public class AlphaBetaPruning {
 		Moves myMoves = new Moves();
 		Moves foeMoves = new Moves();
 		checkAround(2, 0, myMoves, true);
-		checkAround(3, 3, foeMoves, false);
-		System.out.println("mossa vincente "+myMoves.win[0]+ myMoves.win[1]);
-		
+		// checkAround(3, 3, foeMoves, false);
+		// System.out.println("mossa vincente "+myMoves.win[0]+ myMoves.win[1]);
+
 	}
 
 	private void printMatrix(MNKCellState[][] matrix) {
