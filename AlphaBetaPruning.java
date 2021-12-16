@@ -12,8 +12,8 @@ import mnkgame.Node;
 public class AlphaBetaPruning {
 	private final int m, n, k;
 	private final int MAX_DEPTH = 1;
-	private final int WIN = 1;
-	private final int DEFEAT = -1;
+	private final int WIN = 500;
+	private final int DEFEAT = -500;
 	private final int ALPHA = -1000;
 	private final int BETA = 1000;
 	private final int TIMEOUT;
@@ -151,8 +151,7 @@ public class AlphaBetaPruning {
 						}
 					} else {
 						if (currentDepth == MAX_DEPTH - 1) {
-							children = new Node[] { new Node(foeMoves.twoWin[0], foeMoves.twoWin[1], !father.isSaddam,
-									0) };// getheruristic value
+							children = new Node[] {getHeuristicLeaf(foeMoves.twoWin[0], foeMoves.twoWin[1], !father.isSaddam, father.foeLastRegularMove)};
 						} else {
 							children = new Node[] {
 									new Node(foeMoves.twoWin[0], foeMoves.twoWin[1], father.alpha, father.beta,
@@ -167,9 +166,7 @@ public class AlphaBetaPruning {
 
 			} else {
 				if (currentDepth == MAX_DEPTH - 1) {
-					children = new Node[] {
-							new Node(foeMoves.win[0], foeMoves.win[1], !father.isSaddam, 0) };// getHeusristic Node is
-																								// needed here
+					children = new Node[] {getHeuristicLeaf(foeMoves.win[0], foeMoves.win[1], !father.isSaddam, father.foeLastRegularMove)};
 				} else
 					children = new Node[] { new Node(foeMoves.win[0], foeMoves.win[1], father.alpha, father.beta,
 							father.isSaddam ? BETA : ALPHA, father.myLastRegularMove, father.foeLastRegularMove,
@@ -657,9 +654,16 @@ public class AlphaBetaPruning {
 			for (forwardCount = 1; j - forwardCount >= 0 && i + forwardCount < n
 					&& b[i + forwardCount][j - forwardCount] == MNKCellState.FREE
 					&& lengthAD + extraAD <= k; forwardCount++)
-				extraAD++;		
+				extraAD++;	
+				
 		}		
-		return 0;
+		
+		int value = 
+		(extraH + lengthH) >=k?(int)Math.pow(10,lengthH-k+3):0 +
+		(extraV + lengthV) >=k?(int)Math.pow(10,lengthV-k+3):0 +
+		(extraD + lengthD) >=k?(int)Math.pow(10,lengthD-k+3):0 +
+		(extraAD + lengthAD) >=k?(int)Math.pow(10,lengthAD-k+3):0;
+		return value;
 	}
 
 	private void printMatrix(MNKCellState[][] matrix) {
