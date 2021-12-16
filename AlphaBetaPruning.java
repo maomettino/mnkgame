@@ -81,6 +81,7 @@ public class AlphaBetaPruning {
 	}
 
 	private Node alphaBetaPruning(Node father) {
+		System.out.println("examining node i: " +father.i+ " j: "+father.j+ (father.isLeaf?", which is a leaf":""));
 		if (father.isLeaf)
 			return father;
 		currentDepth++;
@@ -586,6 +587,7 @@ public class AlphaBetaPruning {
 		// viva il duce e viva la liberta'
 		int myValue = getHeuristicValue(i, j, isSaddam);
 		int foeValue = getHeuristicValue(foeMove[0], foeMove[1], isSaddam);
+		System.out.println("for the node i: "+i+" j: "+j+", heuristic value: "+(myValue-foeValue)+ " obtained substracting myValue "+ myValue+" and foeValue "+ foeValue);
 		return new Node(i, j, isSaddam, myValue-foeValue);
 	}
 	
