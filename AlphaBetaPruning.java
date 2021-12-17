@@ -135,10 +135,11 @@ public class AlphaBetaPruning {
 					if (foeMoves.twoWin == null) {
 						children = new Node[myMoves.q.size()];
 						if (currentDepth == MAX_DEPTH - 1) {
+							int foeValue = getHeuristicValue(father.foeLastRegularMove[0], father.foeLastRegularMove[1], father.isSaddam);
 							for (int i = 0; !myMoves.q.isEmpty(); i++) {
 								int[] m = myMoves.q.remove();
 								Node child;
-								child = getHeuristicLeaf(m[0], m[1], !father.isSaddam, father.foeLastRegularMove);
+								child = getHeuristicLeaf(m[0], m[1], !father.isSaddam, foeValue);
 								children[i] = child;
 							}
 						} else {
@@ -152,7 +153,7 @@ public class AlphaBetaPruning {
 						}
 					} else {
 						if (currentDepth == MAX_DEPTH - 1) {
-							children = new Node[] {getHeuristicLeaf(foeMoves.twoWin[0], foeMoves.twoWin[1], !father.isSaddam, father.foeLastRegularMove)};
+							children = new Node[] {getHeuristicLeaf(foeMoves.twoWin[0], foeMoves.twoWin[1], !father.isSaddam,getHeuristicValue(father.foeLastRegularMove[0], father.foeLastRegularMove[1], father.isSaddam))};
 						} else {
 							children = new Node[] {
 									new Node(foeMoves.twoWin[0], foeMoves.twoWin[1], father.alpha, father.beta,
@@ -167,7 +168,7 @@ public class AlphaBetaPruning {
 
 			} else {
 				if (currentDepth == MAX_DEPTH - 1) {
-					children = new Node[] {getHeuristicLeaf(foeMoves.win[0], foeMoves.win[1], !father.isSaddam, father.foeLastRegularMove)};
+					children = new Node[] {getHeuristicLeaf(foeMoves.win[0], foeMoves.win[1], !father.isSaddam,getHeuristicValue(father.foeLastRegularMove[0], father.foeLastRegularMove[1], father.isSaddam))};
 				} else
 					children = new Node[] { new Node(foeMoves.win[0], foeMoves.win[1], father.alpha, father.beta,
 							father.isSaddam ? BETA : ALPHA, father.myLastRegularMove, father.foeLastRegularMove,
@@ -319,6 +320,7 @@ public class AlphaBetaPruning {
 			}
 		}
 		if (i + forwardCount < n && b[i + forwardCount][j] == MNKCellState.FREE) {
+			System.out.println("checking free V forward cell " + (i + forwardCount) + " " + j);
 			if (length == k - 1) {
 				System.out.println("found winning V forward cell " + (i + forwardCount) + " " + j);
 				int move[] = { i + forwardCount, j };
@@ -492,7 +494,7 @@ public class AlphaBetaPruning {
 		if (j + backCount < n && i - backCount >= 0 && b[i - backCount][j + backCount] == MNKCellState.FREE) {
 			System.out.println("checking free back AD cell " + (i - backCount) + " " + (j + backCount));
 			if (length == k - 1) {
-				System.out.println("found winning back AD move " + (i - backCount) + " " + (j + backCount));
+				System.out.println("found winning back AD cell " + (i - backCount) + " " + (j + backCount));
 				int move[] = { i - backCount, j + backCount };
 				moves.win = move;
 				return;
@@ -502,7 +504,7 @@ public class AlphaBetaPruning {
 					&& b[i - backCount - c][j + backCount + c] == player && c <= rest; c++)
 				backExtra++;
 			if (length + backExtra == k - 1) {
-				System.out.println("found winning back AD move " + (i - backCount) + " " + (j + backCount));
+				System.out.println("found winning back AD cell " + (i - backCount) + " " + (j + backCount));
 				int move[] = { i - backCount, j + backCount };
 				moves.win = move;
 				return;
@@ -516,16 +518,16 @@ public class AlphaBetaPruning {
 				freeExtraBack = true;
 			if (full) {
 				int[] backMove = { i - backCount, j + backCount, length + backExtra };
-				System.out.println("adding to queue back AD move " + (i - backCount) + " " + (j + backCount));
+				System.out.println("adding to queue back AD cell " + (i - backCount) + " " + (j + backCount));
 				q.add(backMove);
 			}
 		}
 
 		if (j - forwardCount >= 0 && i + forwardCount < n
 				&& b[i + forwardCount][j - forwardCount] == MNKCellState.FREE) {
-			System.out.println("checking forward AD move " + (i + forwardCount) + (j - forwardCount));
+			System.out.println("checking forward AD cell " + (i + forwardCount) +" " + (j - forwardCount));
 			if (length == k - 1) {
-				System.out.println("found winning forward AD move " + (i + forwardCount) + " " + (j - forwardCount));
+				System.out.println("found winning forward AD cell " + (i + forwardCount) + " " + (j - forwardCount));
 				int move[] = { i - forwardCount, j + forwardCount };
 				moves.win = move;
 				return;
@@ -537,7 +539,7 @@ public class AlphaBetaPruning {
 				forwardExtra++;
 
 			if (length + forwardExtra == k - 1) {
-				System.out.println("found winning forward AD move " + (i + forwardCount) + " " + (j - forwardCount));
+				System.out.println("found winning forward AD cell " + (i + forwardCount) + " " + (j - forwardCount));
 				int move[] = { i - forwardCount, j + forwardCount };
 				moves.win = move;
 				return;
@@ -550,7 +552,7 @@ public class AlphaBetaPruning {
 					&& b[i + forwardCount + forwardExtra + 1][j - forwardCount - forwardExtra - 1] == MNKCellState.FREE)
 				freeExtraForward = true;
 			if (full) {
-				System.out.println("adding to queue forward AD move " + (i + forwardCount) + " " + (j - forwardCount));
+				System.out.println("adding to queue forward AD cell " + (i + forwardCount) + " " + (j - forwardCount));
 				int[] forwardMove = { i + forwardCount, j - forwardCount, length + forwardExtra };
 				q.add(forwardMove);
 			}
@@ -561,19 +563,19 @@ public class AlphaBetaPruning {
 				i = freeBack[1] ? i - backCount : i + forwardCount;
 				j = freeBack[1] ? j + backCount : j - forwardCount;
 				int move[] = { i, j };
-				System.out.println("found 2 winning AD move " + i + " " + j);
+				System.out.println("found 2 winning AD cell " + i + " " + j);
 				moves.twoWin = move;
 			}
 		} else {
 			if (freeBack[0] && length + backExtra == k - 2 && freeForward[0] && freeExtraBack) {
 				int move[] = { i - backCount, j + backCount };
-				System.out.println("found 2 winning back AD move " + (i - backCount) + " " + (j + backCount));
+				System.out.println("found 2 winning back AD cell " + (i - backCount) + " " + (j + backCount));
 				moves.twoWin = move;
 				return;
 			}
 			if (freeForward[0] && length + forwardExtra == k - 2 && freeBack[0] && freeExtraForward) {
 				int move[] = { i + forwardCount, j - forwardCount };
-				System.out.println("found 2 winning forwardAD move " + (i + forwardCount) + " " + (j - forwardCount));
+				System.out.println("found 2 winning forwardAD cell " + (i + forwardCount) + " " + (j - forwardCount));
 				moves.twoWin = move;
 				return;
 			}
@@ -582,11 +584,10 @@ public class AlphaBetaPruning {
 			moves.q = q;
 	}
 
-	private Node getHeuristicLeaf(int i, int j, boolean isSaddam, int[] foeMove) {
+	private Node getHeuristicLeaf(int i, int j, boolean isSaddam, int foeValue) {
 		// i j is free now
 		// viva il duce e viva la liberta'
 		int myValue = getHeuristicValue(i, j, isSaddam);
-		int foeValue = getHeuristicValue(foeMove[0], foeMove[1], isSaddam);
 		System.out.println("for the node i: "+i+" j: "+j+", heuristic value: "+(myValue-foeValue)+ " obtained substracting myValue "+ myValue+" and foeValue "+ foeValue);
 		return new Node(i, j, isSaddam, myValue-foeValue);
 	}
@@ -602,10 +603,10 @@ public class AlphaBetaPruning {
 		for (forwardCount = 1; j + forwardCount < n && b[i][j + forwardCount] == player; forwardCount++)
 			lengthH++;
 		if (lengthH >= k - 3) {
-			for (; j - backCount >= 0 && b[i][j - backCount] == MNKCellState.FREE && lengthH + extraH <= k; backCount++)
+			for (; j - backCount >= 0 && b[i][j - backCount] == MNKCellState.FREE && lengthH + extraH < k; backCount++)
 				extraH++;
 			for (; j + forwardCount < n && b[i][j + forwardCount] == MNKCellState.FREE
-					&& lengthH + extraH <= k; forwardCount++)
+					&& lengthH + extraH < k; forwardCount++)
 				extraH++;
 		}
 
@@ -616,10 +617,10 @@ public class AlphaBetaPruning {
 		for (forwardCount = 1; i + forwardCount < n && b[i + forwardCount][j] == player; forwardCount++)
 			lengthV++;
 		if (lengthV >= k - 3) {
-			for (; i - backCount >= 0 && b[i - backCount][j] == MNKCellState.FREE && lengthV + extraV <= k; backCount++)
+			for (; i - backCount >= 0 && b[i - backCount][j] == MNKCellState.FREE && lengthV + extraV < k; backCount++)
 				extraV++;
 			for (; i + forwardCount < n && b[i + forwardCount][j] == MNKCellState.FREE
-					&& lengthH + extraH <= k; forwardCount++)
+					&& lengthV + extraV < k; forwardCount++)
 				extraV++;
 		}
 
@@ -633,11 +634,11 @@ public class AlphaBetaPruning {
 			lengthD++;
 		if (lengthD >= k - 3) {
 			for (; j - backCount >= 0 && i - backCount >= 0
-					&& b[i - backCount][j - backCount] == MNKCellState.FREE && lengthD + extraD <= k; backCount++)
+					&& b[i - backCount][j - backCount] == MNKCellState.FREE && lengthD + extraD < k; backCount++)
 				extraD++;
 			for (; j + forwardCount < n && i + forwardCount < n
 					&& b[i + forwardCount][j + forwardCount] == MNKCellState.FREE
-					&& lengthD + extraD <= k; forwardCount++)
+					&& lengthD + extraD < k; forwardCount++)
 				extraD++;
 		}
 
@@ -651,20 +652,29 @@ public class AlphaBetaPruning {
 			lengthAD++;
 		if (lengthAD >= k - 3) {
 			for (; j + backCount < n && i - backCount >= 0
-					&& b[i - backCount][j + backCount] == MNKCellState.FREE && lengthAD + extraAD <= k; backCount++)
+					&& b[i - backCount][j + backCount] == MNKCellState.FREE && lengthAD + extraAD < k; backCount++)
 				extraAD++;
-			for (forwardCount = 1; j - forwardCount >= 0 && i + forwardCount < n
+			for (; j - forwardCount >= 0 && i + forwardCount < n
 					&& b[i + forwardCount][j - forwardCount] == MNKCellState.FREE
-					&& lengthAD + extraAD <= k; forwardCount++)
+					&& lengthAD + extraAD < k; forwardCount++)
 				extraAD++;	
 				
 		}		
 		
 		int value = 
-		(extraH + lengthH) >=k?(int)Math.pow(10,lengthH-k+3):0 +
-		(extraV + lengthV) >=k?(int)Math.pow(10,lengthV-k+3):0 +
-		(extraD + lengthD) >=k?(int)Math.pow(10,lengthD-k+3):0 +
-		(extraAD + lengthAD) >=k?(int)Math.pow(10,lengthAD-k+3):0;
+		((extraH + lengthH) >=k?(int)Math.pow(10,lengthH-k+3):0) +
+		((extraV + lengthV) >=k?(int)Math.pow(10,lengthV-k+3):0) +
+		((extraD + lengthD) >=k?(int)Math.pow(10,lengthD-k+3):0) +
+		((extraAD + lengthAD) >=k?(int)Math.pow(10,lengthAD-k+3):0);
+		/*System.out.println("for node i: "+i+" j: "+j+":");
+		System.out.println("lengthH "+lengthH+" extraH: "+extraH);
+		System.out.println("lengthV "+lengthV+" extraV: "+extraV);
+		System.out.println("lengthD "+lengthD+" extraD: "+extraD);
+		System.out.println("lengthAD "+lengthAD+" extraAD: "+extraAD);
+		System.out.println("H "+(int)Math.pow(10,lengthH-k+3));
+		System.out.println("V "+(int)Math.pow(10,lengthV-k+3));
+		System.out.println("D "+(int)Math.pow(10,lengthD-k+3));
+		System.out.println("AD "+(int)Math.pow(10,lengthAD-k+3));*/
 		return value;
 	}
 
