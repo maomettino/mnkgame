@@ -43,7 +43,7 @@ public class SaddamHussein implements MNKPlayer {
 			}
 			//choose the first move for saddam
 			//return FC[0];
-			return new MNKCell(1, 1);
+			return FC[0];
 		}
 
 	}
