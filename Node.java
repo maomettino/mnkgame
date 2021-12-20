@@ -10,23 +10,19 @@ public class Node {
     public Node bestChild;
     public boolean isSaddam;
     public boolean isLeaf;
-    public int[] myLastRegularMove;
-    public int[] foeLastRegularMove;
+    public int iFather;
+    public int jFather;
     //constructor for regular nodes
-    public Node(int i, int j, int alpha, int beta, int value, int[] myLastRegularMove, int[] foeLastRegularMove, boolean isSaddam) {
+    public Node(int i, int j, int alpha, int beta, int value, int iFather, int jFather, boolean isSaddam) {
         this.i = i;
         this.j = j;
         this.alpha = alpha;
         this.beta = beta;
         this.value = value;
-        this.myLastRegularMove = new int[2];
-        this.myLastRegularMove[0] = myLastRegularMove[0];
-        this.myLastRegularMove[1] = myLastRegularMove[1];
-        this.foeLastRegularMove = new int[2];
-        this.foeLastRegularMove[0] = foeLastRegularMove[0];
-        this.foeLastRegularMove[1] = foeLastRegularMove[1];
         this.isSaddam = isSaddam;
         this.isLeaf = false;
+        this.iFather = iFather;
+        this.jFather = jFather;
     }
 
     //contructor for leaf nodes

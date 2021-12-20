@@ -18,18 +18,13 @@ public class AlphaBetaPruning {
 	private final int BETA = 10000;
 	private final int TIMEOUT;
 	private int currentDepth;
-	private int saddamMoves, foeMoves;
 	private MNKCellState saddam;
 	private MNKCellState foe;
 	private MNKCellState[][] b;
 	private MNKCellState[][] globalBoard;
-	private int[] saddamlastRegularMove;
-	private int[] foelastRegularMove;
 
 	public AlphaBetaPruning(int m, int n, int k, boolean first, int timeout_in_secs) {
 		currentDepth = -1;
-		saddamMoves = 0;
-		foeMoves = 0;
 		TIMEOUT = timeout_in_secs;
 		this.m = m;
 		this.n = n;
@@ -44,46 +39,20 @@ public class AlphaBetaPruning {
 	}
 
 	public void signFoeMove(MNKCell foeCell) {
-		foeMoves++;
 		globalBoard[foeCell.i][foeCell.j] = foe;
 	}
-/*
-rest in muhammad
-base pericolosa = una base che con una mossa diventa non-counterabile, ovvero vincente 
-in un qualche numero di turni.
-Essa è di per se counterabile,
-se la base dell'avversario non è pericolosa allora posso permettermi di ignorarla(
-e quindi di pensare ad arricchire la mia),
-tornerò poi a considerarla quando l'avversario la riprenderà in mano.
-quando una base è pericolosa?
-)
-*/
+
 	public MNKCell getMove(MNKCell saddamLastCell, MNKCell foeLastCell) {
 		currentDepth = -1;
-		saddamMoves++;
-		foeMoves++;
 		globalBoard[saddamLastCell.i][saddamLastCell.j] = saddam;
 		globalBoard[foeLastCell.i][foeLastCell.j] = foe;
-		if (saddamlastRegularMove == null) {
-			saddamlastRegularMove = new int[2];
-			saddamlastRegularMove[0] = saddamLastCell.i;
-			saddamlastRegularMove[1] = saddamLastCell.j;
-		}
-		if (foelastRegularMove == null)
-			foelastRegularMove = new int[2];
-		foelastRegularMove[0] = foeLastCell.i;
-		foelastRegularMove[1] = foeLastCell.j;
-		
+
 		// make sure that local board matches the global one
 		for (int i = 0; i < m; i++)
 			for (int j = 0; j < n; j++)
 				b[i][j] = globalBoard[i][j];
-		Node father = new Node(foeLastCell.i, foeLastCell.j, ALPHA, BETA, ALPHA, saddamlastRegularMove,
-				foelastRegularMove,
-				false);
+		Node father = new Node(foeLastCell.i, foeLastCell.j, ALPHA, BETA, ALPHA,saddamLastCell.i, saddamLastCell.j, false);
 		Node node = alphaBetaPruning(father);
-		saddamlastRegularMove = node.bestChild.myLastRegularMove;
-		foelastRegularMove = node.bestChild.foeLastRegularMove;
 		if (node.bestChild != null) {
 			System.out.println("cell selected by beta-pruning: " + node.bestChild.i + " " + node.bestChild.j);
 			return new MNKCell(node.bestChild.i, node.bestChild.j);
@@ -149,18 +118,18 @@ quando una base è pericolosa?
 	private Node[] findBestNodes(Node father) {
 		Node[] children;
 		Moves myMoves = new Moves();
-		System.out.println("checking "+ (!father.isSaddam?"saddam":"foe") +" around with pivot i: "+father.myLastRegularMove[0]+" j: "+father.myLastRegularMove[1] );
-		checkAround(father.myLastRegularMove[0], father.myLastRegularMove[1], myMoves, true);
+		System.out.println("checking "+ (!father.isSaddam?"saddam":"foe") +" around with pivot i: "+father.iFather+" j: "+father.jFather );
+		checkAround(father.iFather, father.jFather, myMoves, true);
 		if (myMoves.win == null) {
 			Moves foeMoves = new Moves();
-			System.out.println("checking "+ (!father.isSaddam?"foe":"saddam") +" around with pivot i: "+father.foeLastRegularMove[0]+" j: "+father.foeLastRegularMove[1] );
-			checkAround(father.foeLastRegularMove[0], father.foeLastRegularMove[1], foeMoves, false);
+			System.out.println("checking "+ (!father.isSaddam?"foe":"saddam") +" around with pivot i: "+father.i+" j: "+father.j );
+			checkAround(father.i, father.j, foeMoves, false);
 			if (foeMoves.win == null) {
 				if (myMoves.twoWin == null) {
 					if (foeMoves.twoWin == null) {
 						children = new Node[myMoves.q.size()];
 						if (currentDepth == MAX_DEPTH - 1) {
-							int foeValue = getHeuristicValue(father.foeLastRegularMove[0], father.foeLastRegularMove[1],
+							int foeValue = getHeuristicValue(father.i, father.j,
 									father.isSaddam);
 							for (int i = 0; !myMoves.q.isEmpty(); i++) {
 								int[] m = myMoves.q.remove();
@@ -172,21 +141,20 @@ quando una base è pericolosa?
 							for (int i = 0; !myMoves.q.isEmpty(); i++) {
 								int[] m = myMoves.q.remove();
 								Node child;
-								child = new Node(m[0], m[1], father.alpha, father.beta, father.isSaddam ? ALPHA : BETA,
-										new int[] { m[0], m[1] }, father.foeLastRegularMove, !father.isSaddam);
+								child = new Node(m[0], m[1], father.alpha, father.beta, father.isSaddam ? ALPHA : BETA, father.j, father.j, !father.isSaddam);
 								children[i] = child;
 							}
 						}
 					} else {
 						if (currentDepth == MAX_DEPTH - 1) {
 							children = new Node[] { getHeuristicLeaf(foeMoves.twoWin[0], foeMoves.twoWin[1],
-									!father.isSaddam, getHeuristicValue(father.foeLastRegularMove[0],
-											father.foeLastRegularMove[1], father.isSaddam)) };
+									!father.isSaddam, getHeuristicValue(father.i,
+											father.j, father.isSaddam)) };
 						} else {
 							children = new Node[] {
 									new Node(foeMoves.twoWin[0], foeMoves.twoWin[1], father.alpha, father.beta,
-											father.isSaddam ? ALPHA : BETA, father.myLastRegularMove,
-											father.foeLastRegularMove, !father.isSaddam) };
+											father.isSaddam ? ALPHA : BETA, father.i,
+											father.j, !father.isSaddam) };
 						}
 					}
 				} else {
@@ -198,11 +166,10 @@ quando una base è pericolosa?
 				if (currentDepth == MAX_DEPTH - 1) {
 					children = new Node[] {
 							getHeuristicLeaf(foeMoves.win[0], foeMoves.win[1], !father.isSaddam, getHeuristicValue(
-									father.foeLastRegularMove[0], father.foeLastRegularMove[1], father.isSaddam)) };
+									father.i, father.j, father.isSaddam)) };
 				} else
 					children = new Node[] { new Node(foeMoves.win[0], foeMoves.win[1], father.alpha, father.beta,
-					 		father.isSaddam ? ALPHA : BETA, father.myLastRegularMove, father.foeLastRegularMove,
-							!father.isSaddam) };
+					 		father.isSaddam ? ALPHA : BETA, father.i, father.j, !father.isSaddam) };
 			}
 
 		} else
@@ -647,8 +614,6 @@ quando una base è pericolosa?
 	}
 
 	private Node getHeuristicLeaf(int i, int j, boolean isSaddam, int foeValue) {
-		// i j is free now
-		// viva il duce e viva la liberta'
 		int myValue = getHeuristicValue(i, j, isSaddam);
 		// System.out.println("for the node i: " + i + " j: " + j + ", heuristic value:
 		// " + (myValue - foeValue)
