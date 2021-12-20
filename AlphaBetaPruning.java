@@ -11,7 +11,7 @@ import mnkgame.Node;
 
 public class AlphaBetaPruning {
 	private final int m, n, k;
-	private final int MAX_DEPTH = 5;
+	private final int MAX_DEPTH = 2;
 	private final int WIN = 5000;
 	private final int DEFEAT = -5000;
 	private final int ALPHA = -10000;
@@ -47,7 +47,17 @@ public class AlphaBetaPruning {
 		foeMoves++;
 		globalBoard[foeCell.i][foeCell.j] = foe;
 	}
-
+/*
+rest in muhammad
+base pericolosa = una base che con una mossa diventa non-counterabile, ovvero vincente 
+in un qualche numero di turni.
+Essa è di per se counterabile,
+se la base dell'avversario non è pericolosa allora posso permettermi di ignorarla(
+e quindi di pensare ad arricchire la mia),
+tornerò poi a considerarla quando l'avversario la riprenderà in mano.
+quando una base è pericolosa?
+)
+*/
 	public MNKCell getMove(MNKCell saddamLastCell, MNKCell foeLastCell) {
 		currentDepth = -1;
 		saddamMoves++;
@@ -59,11 +69,11 @@ public class AlphaBetaPruning {
 			saddamlastRegularMove[0] = saddamLastCell.i;
 			saddamlastRegularMove[1] = saddamLastCell.j;
 		}
-		if (foelastRegularMove == null) {
+		if (foelastRegularMove == null)
 			foelastRegularMove = new int[2];
-			foelastRegularMove[0] = foeLastCell.i;
-			foelastRegularMove[1] = foeLastCell.j;
-		}
+		foelastRegularMove[0] = foeLastCell.i;
+		foelastRegularMove[1] = foeLastCell.j;
+		
 		// make sure that local board matches the global one
 		for (int i = 0; i < m; i++)
 			for (int j = 0; j < n; j++)
@@ -72,8 +82,8 @@ public class AlphaBetaPruning {
 				foelastRegularMove,
 				false);
 		Node node = alphaBetaPruning(father);
-		saddamlastRegularMove = node.myLastRegularMove;
-		foelastRegularMove = node.foeLastRegularMove;
+		saddamlastRegularMove = node.bestChild.myLastRegularMove;
+		foelastRegularMove = node.bestChild.foeLastRegularMove;
 		if (node.bestChild != null) {
 			System.out.println("cell selected by beta-pruning: " + node.bestChild.i + " " + node.bestChild.j);
 			return new MNKCell(node.bestChild.i, node.bestChild.j);
@@ -84,15 +94,15 @@ public class AlphaBetaPruning {
 
 	private Node alphaBetaPruning(Node father) {
 		currentDepth++;
-		System.out.println("depth " + currentDepth);
+		//System.out.println("depth " + currentDepth);
 		System.out.println(
-				"examining node i: " + father.i + " j: " + father.j + (father.isLeaf ? ", which is a leaf" : ""));
+				"examining node i: " + father.i + " j: " + father.j + (father.isLeaf ? ", which is a leaf" : " at depth "+currentDepth));
 		Node[] children = findBestNodes(father);
-		// printMatrix(b);
+		printMatrix(b);/*
 		System.out.println("children:");
 		for (Node child : children) {
 			System.out.println("i: " + child.i + " j: " + child.j);
-		}
+		}*/ 
 		for (int i = 0; i < children.length; i++) {
 			b[children[i].i][children[i].j] = children[i].isSaddam ? saddam : foe;
 			Node child;
@@ -139,11 +149,11 @@ public class AlphaBetaPruning {
 	private Node[] findBestNodes(Node father) {
 		Node[] children;
 		Moves myMoves = new Moves();
-		// System.out.println("checking my around");
+		System.out.println("checking "+ (!father.isSaddam?"saddam":"foe") +" around with pivot i: "+father.myLastRegularMove[0]+" j: "+father.myLastRegularMove[1] );
 		checkAround(father.myLastRegularMove[0], father.myLastRegularMove[1], myMoves, true);
 		if (myMoves.win == null) {
 			Moves foeMoves = new Moves();
-			// System.out.println("checking foe around");
+			System.out.println("checking "+ (!father.isSaddam?"foe":"saddam") +" around with pivot i: "+father.foeLastRegularMove[0]+" j: "+father.foeLastRegularMove[1] );
 			checkAround(father.foeLastRegularMove[0], father.foeLastRegularMove[1], foeMoves, false);
 			if (foeMoves.win == null) {
 				if (myMoves.twoWin == null) {
@@ -191,7 +201,7 @@ public class AlphaBetaPruning {
 									father.foeLastRegularMove[0], father.foeLastRegularMove[1], father.isSaddam)) };
 				} else
 					children = new Node[] { new Node(foeMoves.win[0], foeMoves.win[1], father.alpha, father.beta,
-							father.isSaddam ? ALPHA : BETA, father.myLastRegularMove, father.foeLastRegularMove,
+					 		father.isSaddam ? ALPHA : BETA, father.myLastRegularMove, father.foeLastRegularMove,
 							!father.isSaddam) };
 			}
 
