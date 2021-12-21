@@ -470,7 +470,7 @@ public class AlphaBetaPruning {
 		}
 		if (length == k - 2) {
 			if (freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
-				i = freeForward[1] ? i - backCount : i + forwardCount;
+				i = freeBack[1] ? i - backCount : i + forwardCount;
 				j = freeBack[1] ? j - backCount : j + forwardCount;
 				int move[] = { i, j };
 				// System.out.println("found 2 win D cell " + i + " " + j);
