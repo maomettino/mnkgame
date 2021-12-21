@@ -3,11 +3,7 @@ package mnkgame;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.PriorityQueue;
-
-import mnkgame.MNKCell;
-import mnkgame.MNKCellState;
-import mnkgame.Moves;
-import mnkgame.Node;
+import java.util.Stack;
 
 public class AlphaBetaPruning {
 	private final int m, n, k;
@@ -21,7 +17,11 @@ public class AlphaBetaPruning {
 	private MNKCellState saddam;
 	private MNKCellState foe;
 	private MNKCellState[][] b;
-	private MNKCellState[][] globalBoard;
+	private boolean timeouted;
+	private int saddamJump;
+	private int foeJump;
+	private Stack<int[]> saddamHistory; 
+	private Stack<int[]> foeHistory;
 
 	public AlphaBetaPruning(int m, int n, int k, boolean first, int timeout_in_secs) {
 		currentDepth = -1;
@@ -32,25 +32,46 @@ public class AlphaBetaPruning {
 		saddam = first ? MNKCellState.P1 : MNKCellState.P2;
 		foe = first ? MNKCellState.P2 : MNKCellState.P1;
 		b = new MNKCellState[m][n];
-		globalBoard = new MNKCellState[m][n];
 		for (int i = 0; i < m; i++)
 			for (int j = 0; j < n; j++)
-				globalBoard[i][j] = MNKCellState.FREE;
+				b[i][j] = MNKCellState.FREE;
+		timeouted = false;
+		saddamHistory = new Stack<int[]>();	
+		foeHistory = new Stack<int[]>();
 	}
 
 	public void signFoeMove(MNKCell foeCell) {
-		globalBoard[foeCell.i][foeCell.j] = foe;
+		b[foeCell.i][foeCell.j] = foe;
+		this.foeHistory.push(new int[] {foeCell.i,foeCell.j});
 	}
-
-	public MNKCell getMove(MNKCell saddamLastCell, MNKCell foeLastCell) {
+	
+	@SuppressWarnings("unchecked")
+	public MNKCell getMove(MNKCell saddamLastCell, MNKCell foeLastCell, MNKCellState[][] board, Stack<int[]> saddamHistory, Stack<int[]> foeHistory) {
 		currentDepth = -1;
-		globalBoard[saddamLastCell.i][saddamLastCell.j] = saddam;
-		globalBoard[foeLastCell.i][foeLastCell.j] = foe;
-
+		if(!timeouted) {
+			b[saddamLastCell.i][saddamLastCell.j] = saddam;
+			b[foeLastCell.i][foeLastCell.j] = foe;
+			this.saddamHistory.push(new int[] {saddamLastCell.i, saddamLastCell.j});
+			this.foeHistory.push(new int[] {foeLastCell.i, foeLastCell.j});
+		}
+		else {
+			for (int i = 0; i < m; i++)
+				for (int j = 0; j < n; j++)
+					b[i][j] = board[i][j];
+			this.saddamHistory = (Stack)saddamHistory.clone();
+			this.foeHistory = (Stack)foeHistory.clone();
+			timeouted = false;
+		}
+		
+		/*saddamHistory.push(new int[] {saddamLastCell.i,saddamLastCell.j});
+		foeHistory.push(new int[] {foeLastCell.i,foeLastCell.j});
+		saddamHistoryCopy = (Stack<int[]>)saddamHistory.clone();
+		foeHistoryCopy = (Stack<int[]>)foeHistory.clone();
+		saddamHistoryCopy.pop();
+		int[] nigger = saddamHistory.peek();
+		System.out.println(nigger[0]+ " nigger "+nigger[1]);*/
 		// make sure that local board matches the global one
-		for (int i = 0; i < m; i++)
-			for (int j = 0; j < n; j++)
-				b[i][j] = globalBoard[i][j];
+		
 		Node father = new Node(foeLastCell.i, foeLastCell.j, ALPHA, BETA, ALPHA,saddamLastCell.i, saddamLastCell.j, false);
 		Node node = alphaBetaPruning(father);
 		if (node.bestChild != null) {
@@ -999,7 +1020,7 @@ public class AlphaBetaPruning {
 		}
 		if (length == k - 2) {
 			if (freeBack[0] && freeForward[0] && (freeBack[1] || freeForward[1])) {
-				i = freeForward[1] ? i - backCount : i + forwardCount;
+				i = freeBack[1] ? i - backCount : i + forwardCount;
 				j = freeBack[1] ? j - backCount : j + forwardCount;
 				int move[] = { i, j };
 				System.out.println("found 2 win D cell " + i + " " + j);
