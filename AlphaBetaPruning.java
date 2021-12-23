@@ -7,7 +7,7 @@ import java.util.Stack;
 
 public class AlphaBetaPruning {
 	private final int m, n, k;
-	private final int MAX_DEPTH = 2;
+	private final int MAX_DEPTH = 7;
 	private final int WIN = 5000;
 	private final int DEFEAT = -5000;
 	private final int ALPHA = -10000;
@@ -19,7 +19,9 @@ public class AlphaBetaPruning {
 	private MNKCellState[][] b;
 	private boolean timeouted;
 	private int saddamJump;
+	private int saddamJumpCopy;
 	private int foeJump;
+	private int foeJumpCopy;
 	private Stack<int[]> saddamHistory;
 	private Stack<int[]> foeHistory;
 
@@ -39,7 +41,9 @@ public class AlphaBetaPruning {
 		saddamHistory = new Stack<int[]>();
 		foeHistory = new Stack<int[]>();
 		saddamJump = 0;
+		saddamJumpCopy = saddamJump;
 		foeJump = 0;
+		foeJumpCopy = 0;
 	}
 
 	public void signFoeMove(MNKCell foeCell) {
@@ -62,16 +66,23 @@ public class AlphaBetaPruning {
 					b[i][j] = board[i][j];
 			this.saddamHistory = (Stack) saddamHistory.clone();
 			this.foeHistory = (Stack) foeHistory.clone();
-			timeouted = false;
+			saddamJump = saddamJumpCopy;
+			foeJump = foeJumpCopy;
+			timeouted = false;		
 		}
 
 		Node father = new Node(foeLastCell.i, foeLastCell.j, ALPHA, BETA, ALPHA, false, true);
 		//System.out.println("prima del beta-pruning: ");
 		Node node = alphaBetaPruning(father);
+		foeJumpCopy = foeJump;
 		if (node.bestChild != null) {
-			System.out.println("cell selected by beta-pruning: " + node.bestChild.i + " " + node.bestChild.j);
+			if(!node.bestChild.regular)
+				saddamJump++;
+			saddamJumpCopy = saddamJump;
+			System.out.println("cell selected by beta-pruning: " + node.bestChild.i + " " + node.bestChild.j+" with regularity "+node.bestChild.regular);
 			return new MNKCell(node.bestChild.i, node.bestChild.j);
 		}
+		saddamJumpCopy = saddamJump;
 		System.out.println("no cell was found by beta-pruning: ");
 		return new MNKCell(-1, -1);
 	}
@@ -79,9 +90,9 @@ public class AlphaBetaPruning {
 	private Node alphaBetaPruning(Node father) {
 		currentDepth++;
 		// System.out.println("depth " + currentDepth);
-		System.out.println(
+		/*System.out.println(
 				"examining node i: " + father.i + " j: " + father.j
-						+ (father.isLeaf ? ", which is a leaf" : " at depth " + currentDepth));
+						+ (father.isLeaf ? ", which is a leaf" : " at depth " + currentDepth));*/
 		Node[] children = findBestNodes(father);
 		//System.out.println("dopo find best nodes ");
 
@@ -99,7 +110,7 @@ public class AlphaBetaPruning {
 				if (children[i].isSaddam) {
 					if (children[i].regular)
 						saddamJump=0;
-					else
+					else 
 						saddamJump++;
 					saddamHistory.push(new int[] {children[i].i,children[i].j});
 				} else {
@@ -168,12 +179,14 @@ public class AlphaBetaPruning {
 				: (foeHistory.get(foeHistory.size() - 1 - foeJump));
 		int[] foeAroundCell = !father.isSaddam ? (foeHistory.get(foeHistory.size() - 1 - foeJump))
 				: (saddamHistory.get(saddamHistory.size() - 1 - saddamJump));
-		System.out.println("checking " + (!father.isSaddam ? "saddam" : "foe") + " around with pivot i: "
-				+ myAroundCell[0] + " j: " + myAroundCell[1]);
+		if(currentDepth==0)
+			System.out.println("checking " + (!father.isSaddam ? "saddam" : "foe") + " around with pivot i: "
+				+ myAroundCell[0] + " j: " + myAroundCell[1] + " with saddamjump "+saddamJump+" and foejump "+foeJump);
 		checkAround(myAroundCell[0], myAroundCell[1], myMoves, true);
 		if (myMoves.win == null) {
 			Moves foeMoves = new Moves();
-			System.out.println("checking " + (!father.isSaddam ? "foe" : "saddam") + " around with pivot i: "
+			if(currentDepth==0)
+				System.out.println("checking " + (!father.isSaddam ? "foe" : "saddam") + " around with pivot i: "
 					+ foeAroundCell[0] + " j: " + foeAroundCell[1]);
 			checkAround(foeAroundCell[0], foeAroundCell[1], foeMoves, false);
 			if (foeMoves.win == null) {
@@ -229,6 +242,8 @@ public class AlphaBetaPruning {
 		} else
 			children = new Node[] {
 					new Node(myMoves.win[0], myMoves.win[1], !father.isSaddam, !father.isSaddam ? WIN : DEFEAT) };
+		//if(children.length==0)
+		//	System.out.println("this node has no children");
 		return children;
 	}
 
