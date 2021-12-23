@@ -10,10 +10,10 @@ public class Node {
     public Node bestChild;
     public boolean isSaddam;
     public boolean isLeaf;
-    public int iFather;
-    public int jFather;
+    public boolean regular;
+
     //constructor for regular nodes
-    public Node(int i, int j, int alpha, int beta, int value, int iFather, int jFather, boolean isSaddam) {
+    public Node(int i, int j, int alpha, int beta, int value, boolean isSaddam, boolean regular) {
         this.i = i;
         this.j = j;
         this.alpha = alpha;
@@ -21,8 +21,7 @@ public class Node {
         this.value = value;
         this.isSaddam = isSaddam;
         this.isLeaf = false;
-        this.iFather = iFather;
-        this.jFather = jFather;
+        this.regular = regular;
     }
 
     //contructor for leaf nodes
@@ -32,6 +31,7 @@ public class Node {
         this.value = value;
         this.isSaddam = isSaddam;
         this.isLeaf = true;
+        this.regular = true;
     }
 
 }

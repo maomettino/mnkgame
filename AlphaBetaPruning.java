@@ -20,7 +20,7 @@ public class AlphaBetaPruning {
 	private boolean timeouted;
 	private int saddamJump;
 	private int foeJump;
-	private Stack<int[]> saddamHistory; 
+	private Stack<int[]> saddamHistory;
 	private Stack<int[]> foeHistory;
 
 	public AlphaBetaPruning(int m, int n, int k, boolean first, int timeout_in_secs) {
@@ -36,43 +36,37 @@ public class AlphaBetaPruning {
 			for (int j = 0; j < n; j++)
 				b[i][j] = MNKCellState.FREE;
 		timeouted = false;
-		saddamHistory = new Stack<int[]>();	
+		saddamHistory = new Stack<int[]>();
 		foeHistory = new Stack<int[]>();
+		saddamJump = 0;
+		foeJump = 0;
 	}
 
 	public void signFoeMove(MNKCell foeCell) {
 		b[foeCell.i][foeCell.j] = foe;
-		this.foeHistory.push(new int[] {foeCell.i,foeCell.j});
+		this.foeHistory.push(new int[] { foeCell.i, foeCell.j });
 	}
-	
+
 	@SuppressWarnings("unchecked")
-	public MNKCell getMove(MNKCell saddamLastCell, MNKCell foeLastCell, MNKCellState[][] board, Stack<int[]> saddamHistory, Stack<int[]> foeHistory) {
+	public MNKCell getMove(MNKCell saddamLastCell, MNKCell foeLastCell, MNKCellState[][] board,
+			Stack<int[]> saddamHistory, Stack<int[]> foeHistory) {
 		currentDepth = -1;
-		if(!timeouted) {
+		if (!timeouted) {
 			b[saddamLastCell.i][saddamLastCell.j] = saddam;
 			b[foeLastCell.i][foeLastCell.j] = foe;
-			this.saddamHistory.push(new int[] {saddamLastCell.i, saddamLastCell.j});
-			this.foeHistory.push(new int[] {foeLastCell.i, foeLastCell.j});
-		}
-		else {
+			this.saddamHistory.push(new int[] { saddamLastCell.i, saddamLastCell.j });
+			this.foeHistory.push(new int[] { foeLastCell.i, foeLastCell.j });
+		} else {
 			for (int i = 0; i < m; i++)
 				for (int j = 0; j < n; j++)
 					b[i][j] = board[i][j];
-			this.saddamHistory = (Stack)saddamHistory.clone();
-			this.foeHistory = (Stack)foeHistory.clone();
+			this.saddamHistory = (Stack) saddamHistory.clone();
+			this.foeHistory = (Stack) foeHistory.clone();
 			timeouted = false;
 		}
-		
-		/*saddamHistory.push(new int[] {saddamLastCell.i,saddamLastCell.j});
-		foeHistory.push(new int[] {foeLastCell.i,foeLastCell.j});
-		saddamHistoryCopy = (Stack<int[]>)saddamHistory.clone();
-		foeHistoryCopy = (Stack<int[]>)foeHistory.clone();
-		saddamHistoryCopy.pop();
-		int[] nigger = saddamHistory.peek();
-		System.out.println(nigger[0]+ " nigger "+nigger[1]);*/
-		// make sure that local board matches the global one
-		
-		Node father = new Node(foeLastCell.i, foeLastCell.j, ALPHA, BETA, ALPHA,saddamLastCell.i, saddamLastCell.j, false);
+
+		Node father = new Node(foeLastCell.i, foeLastCell.j, ALPHA, BETA, ALPHA, false, true);
+		//System.out.println("prima del beta-pruning: ");
 		Node node = alphaBetaPruning(father);
 		if (node.bestChild != null) {
 			System.out.println("cell selected by beta-pruning: " + node.bestChild.i + " " + node.bestChild.j);
@@ -84,23 +78,53 @@ public class AlphaBetaPruning {
 
 	private Node alphaBetaPruning(Node father) {
 		currentDepth++;
-		//System.out.println("depth " + currentDepth);
+		// System.out.println("depth " + currentDepth);
 		System.out.println(
-				"examining node i: " + father.i + " j: " + father.j + (father.isLeaf ? ", which is a leaf" : " at depth "+currentDepth));
+				"examining node i: " + father.i + " j: " + father.j
+						+ (father.isLeaf ? ", which is a leaf" : " at depth " + currentDepth));
 		Node[] children = findBestNodes(father);
-		printMatrix(b);/*
-		System.out.println("children:");
-		for (Node child : children) {
-			System.out.println("i: " + child.i + " j: " + child.j);
-		}*/ 
+		//System.out.println("dopo find best nodes ");
+
+	/*	printMatrix(b);
+						 * System.out.println("children:");
+						 * for (Node child : children) {
+						 * System.out.println("i: " + child.i + " j: " + child.j);
+						 * }
+						 */
+		int childrenJump = father.isSaddam? foeJump: saddamJump;
 		for (int i = 0; i < children.length; i++) {
-			b[children[i].i][children[i].j] = children[i].isSaddam ? saddam : foe;
 			Node child;
-			if (currentDepth != MAX_DEPTH - 1 && !children[i].isLeaf)
+			//System.out.println("for child i: "+children[i].i +" j: "+children[i].j + " saddamJump " + saddamJump + " foeJump "+ foeJump+" saddamHistory size "+ saddamHistory.size()+ " foeHistory size "+ foeHistory.size() );
+			if (currentDepth != MAX_DEPTH - 1 && !children[i].isLeaf) {
+				if (children[i].isSaddam) {
+					if (children[i].regular)
+						saddamJump=0;
+					else
+						saddamJump++;
+					saddamHistory.push(new int[] {children[i].i,children[i].j});
+				} else {
+					if (children[i].regular)
+						foeJump=0;
+					else
+						foeJump++;
+					foeHistory.push(new int[] {children[i].i, children[i].j});
+				}
+				b[children[i].i][children[i].j] = children[i].isSaddam ? saddam : foe;
+				//System.out.println("prima della ricorsione: ");
 				child = alphaBetaPruning(children[i]);
-			else
+				//System.out.println("dopo la ricorsione ");
+				b[child.i][child.j] = MNKCellState.FREE;
+				if (children[i].isSaddam) {
+					saddamJump = childrenJump;
+					saddamHistory.pop();
+				}
+				else {
+					foeJump = childrenJump;
+					foeHistory.pop();
+				}
+					
+			} else
 				child = children[i];
-			b[child.i][child.j] = MNKCellState.FREE;
 			if (children[i].isSaddam) {
 				/*
 				 * if (currentDepth == 0) {
@@ -137,14 +161,21 @@ public class AlphaBetaPruning {
 	}
 
 	private Node[] findBestNodes(Node father) {
+		//System.out.println("for father i: "+father.i +" j: "+father.j + " saddamJump " + saddamJump + " foeJump "+ foeJump+" saddamHistory size "+ saddamHistory.size()+ " foeHistory size "+ foeHistory.size() );
 		Node[] children;
 		Moves myMoves = new Moves();
-		System.out.println("checking "+ (!father.isSaddam?"saddam":"foe") +" around with pivot i: "+father.iFather+" j: "+father.jFather );
-		checkAround(father.iFather, father.jFather, myMoves, true);
+		int[] myAroundCell = !father.isSaddam ? (saddamHistory.get(saddamHistory.size() - 1 - saddamJump) )
+				: (foeHistory.get(foeHistory.size() - 1 - foeJump));
+		int[] foeAroundCell = !father.isSaddam ? (foeHistory.get(foeHistory.size() - 1 - foeJump))
+				: (saddamHistory.get(saddamHistory.size() - 1 - saddamJump));
+		System.out.println("checking " + (!father.isSaddam ? "saddam" : "foe") + " around with pivot i: "
+				+ myAroundCell[0] + " j: " + myAroundCell[1]);
+		checkAround(myAroundCell[0], myAroundCell[1], myMoves, true);
 		if (myMoves.win == null) {
 			Moves foeMoves = new Moves();
-			System.out.println("checking "+ (!father.isSaddam?"foe":"saddam") +" around with pivot i: "+father.i+" j: "+father.j );
-			checkAround(father.i, father.j, foeMoves, false);
+			System.out.println("checking " + (!father.isSaddam ? "foe" : "saddam") + " around with pivot i: "
+					+ foeAroundCell[0] + " j: " + foeAroundCell[1]);
+			checkAround(foeAroundCell[0], foeAroundCell[1], foeMoves, false);
 			if (foeMoves.win == null) {
 				if (myMoves.twoWin == null) {
 					if (foeMoves.twoWin == null) {
@@ -162,7 +193,8 @@ public class AlphaBetaPruning {
 							for (int i = 0; !myMoves.q.isEmpty(); i++) {
 								int[] m = myMoves.q.remove();
 								Node child;
-								child = new Node(m[0], m[1], father.alpha, father.beta, father.isSaddam ? ALPHA : BETA, father.j, father.j, !father.isSaddam);
+								child = new Node(m[0], m[1], father.alpha, father.beta, father.isSaddam ? ALPHA : BETA,
+										!father.isSaddam, true);
 								children[i] = child;
 							}
 						}
@@ -174,8 +206,7 @@ public class AlphaBetaPruning {
 						} else {
 							children = new Node[] {
 									new Node(foeMoves.twoWin[0], foeMoves.twoWin[1], father.alpha, father.beta,
-											father.isSaddam ? ALPHA : BETA, father.i,
-											father.j, !father.isSaddam) };
+											father.isSaddam ? ALPHA : BETA, !father.isSaddam, checkRegularity(myMoves.q,foeMoves.twoWin)) };
 						}
 					}
 				} else {
@@ -188,9 +219,11 @@ public class AlphaBetaPruning {
 					children = new Node[] {
 							getHeuristicLeaf(foeMoves.win[0], foeMoves.win[1], !father.isSaddam, getHeuristicValue(
 									father.i, father.j, father.isSaddam)) };
-				} else
+				} else {
 					children = new Node[] { new Node(foeMoves.win[0], foeMoves.win[1], father.alpha, father.beta,
-					 		father.isSaddam ? ALPHA : BETA, father.i, father.j, !father.isSaddam) };
+							father.isSaddam ? ALPHA : BETA, !father.isSaddam,checkRegularity(myMoves.q,foeMoves.win)) };
+				}
+
 			}
 
 		} else
@@ -632,6 +665,14 @@ public class AlphaBetaPruning {
 		}
 		if (full)
 			moves.q = q;
+	}
+
+	private boolean checkRegularity(PriorityQueue<int[]> q, int[] cell) {
+		for (int[] m : q) {
+			if(m[0]==cell[0] && m[1]==cell[1])
+				return true;
+		}
+		return false;
 	}
 
 	private Node getHeuristicLeaf(int i, int j, boolean isSaddam, int foeValue) {
