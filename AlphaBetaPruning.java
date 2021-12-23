@@ -24,6 +24,10 @@ public class AlphaBetaPruning {
 	private int foeJumpCopy;
 	private Stack<int[]> saddamHistory;
 	private Stack<int[]> foeHistory;
+	ArrayList<int[]> saddamAdjacentCells;
+	ArrayList<int[]> foeAdjacentCells;
+	ArrayList<int[]> saddamAdjacentCellsCopy;
+	ArrayList<int[]> foeAdjacentCellsCopy;
 
 	public AlphaBetaPruning(int m, int n, int k, boolean first, int timeout_in_secs) {
 		currentDepth = -1;
@@ -44,6 +48,10 @@ public class AlphaBetaPruning {
 		saddamJumpCopy = saddamJump;
 		foeJump = 0;
 		foeJumpCopy = 0;
+		saddamAdjacentCells = new ArrayList<int[]>();
+		foeAdjacentCells = new ArrayList<int[]>();
+		saddamAdjacentCellsCopy = new ArrayList<int[]>();
+		foeAdjacentCellsCopy = new ArrayList<int[]>();
 	}
 
 	public void signFoeMove(MNKCell foeCell) {
@@ -64,8 +72,8 @@ public class AlphaBetaPruning {
 			for (int i = 0; i < m; i++)
 				for (int j = 0; j < n; j++)
 					b[i][j] = board[i][j];
-			this.saddamHistory = (Stack) saddamHistory.clone();
-			this.foeHistory = (Stack) foeHistory.clone();
+			this.saddamHistory = (Stack<int[]>) saddamHistory.clone();
+			this.foeHistory = (Stack<int[]>) foeHistory.clone();
 			saddamJump = saddamJumpCopy;
 			foeJump = foeJumpCopy;
 			timeouted = false;		
@@ -242,8 +250,8 @@ public class AlphaBetaPruning {
 		} else
 			children = new Node[] {
 					new Node(myMoves.win[0], myMoves.win[1], !father.isSaddam, !father.isSaddam ? WIN : DEFEAT) };
-		//if(children.length==0)
-		//	System.out.println("this node has no children");
+		if(children.length==0)
+			System.out.println("this node has no children");
 		return children;
 	}
 
@@ -683,10 +691,18 @@ public class AlphaBetaPruning {
 	}
 
 	private boolean checkRegularity(PriorityQueue<int[]> q, int[] cell) {
-		for (int[] m : q) {
+		if(q==null) {
+			System.out.println("la queue e' vuota e la depth "+currentDepth);
+			printMatrix(b);
+			return false;
+		}
+		else {
+			for (int[] m : q) {
 			if(m[0]==cell[0] && m[1]==cell[1])
 				return true;
 		}
+		}
+		
 		return false;
 	}
 
