@@ -2,8 +2,13 @@ package mnkgame;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.PriorityQueue;
+import java.util.Set;
 import java.util.Stack;
+
+import mnkgame.MNKCell;
+import mnkgame.MNKCellState;
 
 public class AlphaBetaPruning {
 	private final int m, n, k;
@@ -24,10 +29,9 @@ public class AlphaBetaPruning {
 	private int foeJumpCopy;
 	private Stack<int[]> saddamHistory;
 	private Stack<int[]> foeHistory;
-	ArrayList<int[]> saddamAdjacentCells;
-	ArrayList<int[]> foeAdjacentCells;
-	ArrayList<int[]> saddamAdjacentCellsCopy;
-	ArrayList<int[]> foeAdjacentCellsCopy;
+	Set<MNKCell> saddamAdjacentCells;
+	Set<MNKCell> foeAdjacentCells;
+	int[][] direction = new int[][] { {-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1}};
 
 	public AlphaBetaPruning(int m, int n, int k, boolean first, int timeout_in_secs) {
 		currentDepth = -1;
@@ -48,10 +52,9 @@ public class AlphaBetaPruning {
 		saddamJumpCopy = saddamJump;
 		foeJump = 0;
 		foeJumpCopy = 0;
-		saddamAdjacentCells = new ArrayList<int[]>();
-		foeAdjacentCells = new ArrayList<int[]>();
-		saddamAdjacentCellsCopy = new ArrayList<int[]>();
-		foeAdjacentCellsCopy = new ArrayList<int[]>();
+		saddamAdjacentCells = new HashSet<MNKCell>();
+		foeAdjacentCells = new HashSet<MNKCell>();
+
 	}
 
 	public void signFoeMove(MNKCell foeCell) {
@@ -68,6 +71,7 @@ public class AlphaBetaPruning {
 			b[foeLastCell.i][foeLastCell.j] = foe;
 			this.saddamHistory.push(new int[] { saddamLastCell.i, saddamLastCell.j });
 			this.foeHistory.push(new int[] { foeLastCell.i, foeLastCell.j });
+
 		} else {
 			for (int i = 0; i < m; i++)
 				for (int j = 0; j < n; j++)
@@ -78,7 +82,12 @@ public class AlphaBetaPruning {
 			foeJump = foeJumpCopy;
 			timeouted = false;		
 		}
-
+		saddamAdjacentCells.remove(saddamLastCell);
+		saddamAdjacentCells.remove(foeLastCell);
+		saddamAdjacentCells.addAll(getCellAdjacents(saddamLastCell));
+		foeAdjacentCells.remove(saddamLastCell);
+		foeAdjacentCells.remove(foeLastCell);
+		foeAdjacentCells.addAll(getCellAdjacents(foeLastCell));
 		Node father = new Node(foeLastCell.i, foeLastCell.j, ALPHA, BETA, ALPHA, false, true);
 		//System.out.println("prima del beta-pruning: ");
 		Node node = alphaBetaPruning(father);
@@ -179,6 +188,12 @@ public class AlphaBetaPruning {
 		return father;
 	}
 
+	private void getNodes(Node father){
+		if(!father.isSaddam) {
+			//updateAdjacentCells(saddamAdjacentCells, , father);
+		}
+	}
+	
 	private Node[] findBestNodes(Node father) {
 		//System.out.println("for father i: "+father.i +" j: "+father.j + " saddamJump " + saddamJump + " foeJump "+ foeJump+" saddamHistory size "+ saddamHistory.size()+ " foeHistory size "+ foeHistory.size() );
 		Node[] children;
@@ -250,8 +265,20 @@ public class AlphaBetaPruning {
 		} else
 			children = new Node[] {
 					new Node(myMoves.win[0], myMoves.win[1], !father.isSaddam, !father.isSaddam ? WIN : DEFEAT) };
-		if(children.length==0)
-			System.out.println("this node has no children");
+		if(children.length==0) {
+			System.out.println("the node mahmoud i: "+father.i+" j: "+father.j+" has no children, gotta check the adjacents");
+			Set<MNKCell> set = updateAdjacentCells(!father.isSaddam);
+			//create nodes from set
+		}
+		if(children.length==0){
+			System.out.println("the node ahamdinejad i: "+father.i+" j: "+father.j+" has no adjacents as well, must take the other player adjacents");
+			Set<MNKCell> set = updateAdjacentCells(father.isSaddam);
+
+		}
+		if(children.length==0) {
+			System.out.println("the node ahamdinejad i: "+father.i+" j: "+father.j+" has no children at all, this shouldn't happen");
+
+		}
 		return children;
 	}
 
@@ -706,6 +733,46 @@ public class AlphaBetaPruning {
 		return false;
 	}
 
+	private Set<MNKCell> getAdjacentCells(boolean isSaddam ) {
+		Set<MNKCell> set =  new HashSet<MNKCell>();
+		if(isSaddam) {
+			set.addAll(saddamAdjacentCells);
+			for(i=0;i<=currentDepth;i++) {
+				set.addAll(getCellAdjacents(saddamHistory.get()));
+			}
+			for(i=0;i<=currentDepth;i++) {
+				set.remove(foeHistory.get());
+			}
+		}
+		else {
+			set.addAll(foeAdjacentCells);
+			for(i=0;i<=currentDepth;i++) {
+				set.addAll(getCellAdjacents(foeHistory.get()));
+			}
+			for(i=0;i<=currentDepth;i++) {
+				set.remove(saddamHistory.get());
+			}
+		}
+		return set;
+	}
+
+	private Set<MNKCell> getCellAdjacents(MNKCell cell) {
+		Set<MNKCell> set = new HashSet<MNKCell>();
+		for(int[] d : direction ) {
+			int i = cell.i+d[0];
+			int j = cell.j+d[1];
+			//System.out.println("current i and j "+i+" "+j);	
+			if( i<n && j<n && i>=0 && j>=0 && b[i][j]==MNKCellState.FREE) {
+				//System.out.println("adding "+i+" "+j);		
+				set.add(new MNKCell(i, j));
+				//System.out.println("added "+i+" "+j);	
+			}
+				
+		}
+		return set;
+	}
+
+
 	private Node getHeuristicLeaf(int i, int j, boolean isSaddam, int foeValue) {
 		int myValue = getHeuristicValue(i, j, isSaddam);
 		// System.out.println("for the node i: " + i + " j: " + j + ", heuristic value:
@@ -793,6 +860,14 @@ public class AlphaBetaPruning {
 		 */
 		return value;
 	}
+
+	private void printMatrix(Set<MNKCell> matrix) {
+		matrix.forEach((row) -> {
+			System.out.print("[ "+row.i);
+			System.out.println(row.j+" ]");
+		});
+	}
+
 
 	private void printMatrix(MNKCellState[][] matrix) {
 		Arrays.stream(matrix).forEach((row) -> {
