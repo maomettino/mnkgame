@@ -48,7 +48,7 @@ public class SaddamHussein implements MNKPlayer {
 			board[foeLastCell.i][foeLastCell.j] = foe;
 			saddamHistory.push(new int[] {saddamLastCell.i, saddamLastCell.j});
 			foeHistory.push(new int[] {foeLastCell.i, foeLastCell.j});
-			MNKCell cell = abp.getMove(saddamLastCell, foeLastCell, board, saddamHistory, foeHistory);
+			MNKCell cell = abp.clandestino(saddamLastCell, foeLastCell, board, saddamHistory, foeHistory);
 			//abp.test();
 			//return FC[0];
 			return cell.i==-1?FC[0]:cell;
