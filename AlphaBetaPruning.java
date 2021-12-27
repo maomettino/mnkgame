@@ -13,7 +13,7 @@ import mnkgame.Node;
 
 public class AlphaBetaPruning {
 	private final int m, n, k;
-	private final int MAX_DEPTH = 3;
+	private final int MAX_DEPTH = 4;
 	private final int WIN = 5000;
 	private final int DEFEAT = -5000;
 	private final int ALPHA = -10000;
@@ -24,12 +24,13 @@ public class AlphaBetaPruning {
 	private MNKCellState foe;
 	private MNKCellState[][] b;
 	private boolean timeouted;
-	Set<MNKCell> saddamAdjacentCells;
-	Set<MNKCell> foeAdjacentCells;
-	Set<MNKCell> saddamAdjacentCellsCopy;
-	Set<MNKCell> foeAdjacentCellsCopy;
-	int[][] direction = new int[][] { { -1, -1 }, { -1, 0 }, { -1, 1 }, { 0, 1 }, { 1, 1 }, { 1, 0 }, { 1, -1 },
+	private Set<MNKCell> saddamAdjacentCells;
+	private Set<MNKCell> foeAdjacentCells;
+	private Set<MNKCell> saddamAdjacentCellsCopy;
+	private Set<MNKCell> foeAdjacentCellsCopy;
+	private int[][] direction = new int[][] { { -1, -1 }, { -1, 0 }, { -1, 1 }, { 0, 1 }, { 1, 1 }, { 1, 0 }, { 1, -1 },
 			{ 0, -1 } };
+	private int[] bestNode;
 
 	public AlphaBetaPruning(int m, int n, int k, boolean first, int timeout_in_secs) {
 		currentDepth = -1;
@@ -76,82 +77,83 @@ public class AlphaBetaPruning {
 			foeAdjacentCells.clear();
 			foeAdjacentCells.addAll(foeAdjacentCellsCopy);
 		}
-		Node father = new Node(foeLastCell.i, foeLastCell.j, ALPHA, BETA, ALPHA, false, true);
-		Node node = alphaBetaPruning(father);
-		if (node.bestChild != null) {
-			System.out.println("cell selected by beta-pruning: " + node.bestChild.i + " " + node.bestChild.j
-					+ " with regularity " + node.bestChild.regular);
-			return new MNKCell(node.bestChild.i, node.bestChild.j);
+		bestNode = null;
+		int[] father = new int [] {foeLastCell.i, foeLastCell.j, ALPHA};
+		alphaBetaPruning(father,ALPHA,BETA);
+		if (bestNode != null) {
+			System.out.println("cell selected by beta-pruning: " + bestNode[0] + " " + bestNode[1]+" with value "+bestNode[2]);
+			return new MNKCell(bestNode[0], bestNode[1]);
 		}
 		System.out.println("no cell was found by beta-pruning: ");
 		return new MNKCell(-1, -1);
 	}
 
-	private Node alphaBetaPruning(Node father) {
+	private int[] alphaBetaPruning(int[] father, int alpha, int beta) {
 		currentDepth++;
-		System.out.println("current father " + father.i + " " + father.j + " at depth " + currentDepth);
+		boolean almostMaxDepth = (currentDepth==MAX_DEPTH-1);
+		boolean isSaddam = (currentDepth%2==0)?false:true;
+		if(currentDepth==0)
+			System.out.println("current father " + father[0] + " " + father[1] + " at depth " + currentDepth);
 		boolean removed = false;
 		Set<MNKCell> saveState = new HashSet<MNKCell>();
-		saveState.addAll(father.isSaddam ? saddamAdjacentCells : foeAdjacentCells);
-		updateAdjacentCells((father.isSaddam ? saddamAdjacentCells : foeAdjacentCells),
-				new MNKCell(father.i, father.j));
-		if ((father.isSaddam ? foeAdjacentCells : saddamAdjacentCells).remove(new MNKCell(father.i, father.j))) {
+		saveState.addAll(isSaddam ? saddamAdjacentCells : foeAdjacentCells);
+		updateAdjacentCells((isSaddam ? saddamAdjacentCells : foeAdjacentCells),
+				new MNKCell(father[0], father[1]));
+		if ((isSaddam ? foeAdjacentCells : saddamAdjacentCells).remove(new MNKCell(father[0], father[1]))) {
 			removed = true;
 		}
 
-		Node[] children = getNodes(father);
+		int[][] children = getNodes(father, isSaddam);
 		if (children.length == 0) {
-			System.out.println("i: " + father.i + " j: " + father.j + " has no children");
-			return new Node(father.i, father.j, father.isSaddam, 0);
+			System.out.println("i: " + father[0] + " j: " + father[1] + " has no children");
+			return new int[] {father[0], father[1], 0};
 		}
-
-		System.out.println("children:");
-		for (Node child : children) {
-			System.out.println("i: " + child.i + " j: " + child.j);
+		if(currentDepth==0) {
+			System.out.println("children:");
+			for (int[] child : children) {
+				System.out.println("i: " + child[0] + " j: " + child[1]);
+			}
 		}
+		
 		int foeValue = 0;
-		if (currentDepth == MAX_DEPTH - 1) {
-			foeValue = getHeuristicValue(father.i, father.j, father.isSaddam);
+		if (almostMaxDepth) {
+			foeValue = getHeuristicValue(father[0], father[1], isSaddam);
 		}
-		for (Node c : children) {
-			Node child;
-			if (isWinningCell(c.i, c.j, c.isSaddam ? saddam : foe)) {
-				child = new Node(c.i, c.j, c.isSaddam, c.isSaddam ? WIN : DEFEAT);
-				System.out.println("the child " + child.i + " " + child.j + " is winning for "
-						+ (child.isSaddam ? "saddam" : "foe"));
+		for (int[] child : children) {
+			if (isWinningCell(child[0], child[1], !isSaddam ? saddam : foe)) {
+				child = new int[] { child[0], child[1], !isSaddam ? WIN : DEFEAT };
+				if(currentDepth==1)
+				System.out.println("the child " + child[0] + " " + child[1] + " is winning for "
+						+ (!isSaddam ? "saddam" : "foe")+" with father "+father[0]+" "+father[1]);
 			} else {
 
-				if (currentDepth == MAX_DEPTH - 1) {
-					child = getHeuristicLeaf(c.i, c.j, c.isSaddam, foeValue);
-					System.out.println("the child " + child.i + " " + child.j + " is just a leaf ");
+				if (almostMaxDepth) {
+					child = new int[] {child[0], child[1],(getHeuristicValue(child[0], child[1], !isSaddam)-foeValue)};
 				} else {
-					b[c.i][c.j] = c.isSaddam ? saddam : foe;
-					child = alphaBetaPruning(c);
-					b[c.i][c.j] = MNKCellState.FREE;
+					b[child[0]][child[1]] = !isSaddam ? saddam : foe;
+					child = alphaBetaPruning(child,alpha,beta);
+					b[child[0]][child[1]] = MNKCellState.FREE;
 				}
 			}
-			if (child.isSaddam) {
-				if (currentDepth == 0 && child.value > father.value) {
-					father.bestChild = child;
+			if (!isSaddam) {
+				if (currentDepth == 0 && child[2] > father[2]) {
+					bestNode = child;
 				}
-				father.value = Math.max(father.value, child.value);
-				father.alpha = Math.max(father.alpha, father.value);
+				father[2] = Math.max(father[2], child[2]);
+				alpha = Math.max(alpha, father[2]);
 			} else {
-				father.value = Math.min(father.value, child.value);
-				father.beta = Math.min(father.beta, father.value);
+				father[2] = Math.min(father[2], child[2]);
+				beta = Math.min(beta, father[2]);
 			}
-			if (father.beta <= father.alpha) {
+			//System.out.println("value "+father[2] );
+			if (beta <= alpha) { 
+				
 				System.out.println("cut off");
 				break;
 			}
-			if ((child.isSaddam && child.value == WIN) || (!child.isSaddam && child.value == DEFEAT)) {
-				System.out.println(
-						"since this move is winning for the current player we look no further in the current sub-tree");
-				break;
-			}
 		}
 
-		if (father.isSaddam) {
+		if (isSaddam) {
 			saddamAdjacentCells = saveState;
 		}
 
@@ -159,29 +161,29 @@ public class AlphaBetaPruning {
 			foeAdjacentCells = saveState;
 		}
 		if (removed) {
-			(father.isSaddam ? foeAdjacentCells : saddamAdjacentCells).add(new MNKCell(father.i, father.j));
+			(isSaddam ? foeAdjacentCells : saddamAdjacentCells).add(new MNKCell(father[0], father[1]));
 		}
-
+		if(currentDepth==1)
+			System.out.println("cell "+father[0]+" "+father[1]+" has updated value "+father[2]);
 		currentDepth--;
 		return father;
 	}
 
-	private Node[] getNodes(Node father) {
+	private int[][] getNodes(int[] father, boolean isSaddam) {
 		Set<MNKCell> set = new HashSet<MNKCell>();
 		set.addAll(saddamAdjacentCells);
 		set.addAll(foeAdjacentCells);
-		Node[] children = new Node[set.size()];
+		int[][] children = new int[set.size()][3];
 		int i = 0;
-		if (currentDepth == MAX_DEPTH - 1) {
-			int otherPlayerValue = getHeuristicValue(father.i, father.j, father.isSaddam);
+		if ((currentDepth==MAX_DEPTH-1)) {
+			int otherPlayerValue = getHeuristicValue(father[0], father[1], isSaddam);
 			for (MNKCell cell : set) {
-				children[i] = getHeuristicLeaf(cell.i, cell.j, !father.isSaddam, otherPlayerValue);
+				children[i] = new int[] {cell.i, cell.j,(getHeuristicValue(cell.i, cell.j, !isSaddam)-otherPlayerValue)};
 				i++;
 			}
 		} else {
 			for (MNKCell cell : set) {
-				children[i] = new Node(cell.i, cell.j, father.alpha, father.beta, father.isSaddam ? ALPHA : BETA,
-						!father.isSaddam, true);
+				children[i] = new int[] {cell.i, cell.j, isSaddam ? ALPHA : BETA };
 				i++;
 			}
 		}
@@ -254,12 +256,6 @@ public class AlphaBetaPruning {
 			}
 		}
 		return set;
-	}
-
-	private Node getHeuristicLeaf(int i, int j, boolean isSaddam, int foeValue) {
-		int myValue = getHeuristicValue(i, j, isSaddam);
-		Node node = new Node(i, j, isSaddam, myValue - foeValue);
-		return node;
 	}
 
 	private int getHeuristicValue(int i, int j, boolean isSaddam) {
