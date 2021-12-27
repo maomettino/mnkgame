@@ -7,16 +7,11 @@ import java.util.Random;
 import java.util.Stack;
 
 public class SaddamHussein implements MNKPlayer {
-	// TODO: handle time with timer, threads or whatever
-	// TODO: look-up and perhaps use junit for unit testing
-	// TODO: reycle previously computed stuff in beta-pruning if possible
 	private AlphaBetaPruning abp;
 	private int turn;
 	private MNKCellState[][] board;
 	private MNKCellState saddam;
 	private MNKCellState foe;
-	private Stack<int[]> saddamHistory;
-	private Stack<int[]> foeHistory;
 	/**
 	 * Default empty constructor
 	 */
@@ -32,8 +27,6 @@ public class SaddamHussein implements MNKPlayer {
 		for (int i = 0; i < M; i++)
 			for (int j = 0; j < N; j++)
 				board[i][j] = MNKCellState.FREE;
-		saddamHistory = new Stack<int[]>();
-		foeHistory = new Stack<int[]>();
 	}
 
 	public MNKCell selectCell(MNKCell[] FC, MNKCell[] MC) {
@@ -46,24 +39,16 @@ public class SaddamHussein implements MNKPlayer {
 			MNKCell foeLastCell = MC[MC.length - 1];
 			board[saddamLastCell.i][saddamLastCell.j] = saddam;
 			board[foeLastCell.i][foeLastCell.j] = foe;
-			saddamHistory.push(new int[] {saddamLastCell.i, saddamLastCell.j});
-			foeHistory.push(new int[] {foeLastCell.i, foeLastCell.j});
-			MNKCell cell = abp.clandestino(saddamLastCell, foeLastCell, board, saddamHistory, foeHistory);
-			//abp.test();
-			//return FC[0];
+			MNKCell cell = abp.getMove(saddamLastCell, foeLastCell, board);
 			return cell.i==-1?FC[0]:cell;
 		}
 		// When it's my first turn
 		else {
-			//abp.test();
 			if (MC.length > 0) { // if I'm the second player
 				MNKCell foeCell = MC[MC.length - 1]; // Recover the last move from MC
 				board[foeCell.i][foeCell.j]=foe;
-				foeHistory.push(new int[] {foeCell.i, foeCell.j});
 				abp.signFoeMove(foeCell);
 			}
-			//choose the first move for saddam
-			//return FC[0];
 			return FC[0];
 		}
 
