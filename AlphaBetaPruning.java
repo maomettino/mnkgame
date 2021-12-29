@@ -11,6 +11,23 @@ import mnkgame.MNKCell;
 import mnkgame.MNKCellState;
 import mnkgame.Node;
 
+/* TODO list:
+	-fix the only known bug of this algorithm, which is:
+		-the algorithm always finds a winning move for the foe if it exists but it
+		doesn't always choose it, even when it must do so(there are no winning moves for the current player
+		so we must make sure that the foe does not win in the next turn),
+		sometimes this happens with the winning move for the current player as well
+	-consider Integer as the element of the set instead of MNKCell, it may be lighter
+	-consider Board class instead of b matrix, it may be more comfortable and perhaps more efficient
+	
+	-the research space of the algorithm may be reduced by generating the foe-adjacent moves only
+	if necessary, i.e. no (immediate)winning move was found, can we reduce any further?
+	-check around finds a winning move in a relatively efficient way, but if there is no
+	 winning move then it's a useless effort, can we use it somehow?
+	-the generated moves should be ordered to increase the cut-off probability, we may give
+	 priority to the moves adjacent to the player and the foe last move or something like that
+
+*/
 public class AlphaBetaPruning {
 	private final int m, n, k;
 	private final int MAX_DEPTH = 4;
