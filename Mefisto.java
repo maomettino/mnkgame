@@ -71,17 +71,21 @@ public class Mefisto implements MNKPlayer {
 	}
 
 	private MNKCell getMove(MNKCell[] FC, MNKCell mefistoLastCell, MNKCell foeLastCell) {
-		int[] mefistoVictoryCell = findVictory(mefistoLastCell, true);
-		if (!(mefistoVictoryCell == null)) {
-			return new MNKCell(mefistoVictoryCell[0], mefistoVictoryCell[1]);
+		Moves mefistoMoves = findVictory(mefistoLastCell, true);
+		if (!(mefistoMoves.win == null)) {
+			return new MNKCell(mefistoMoves.win[0], mefistoMoves.win[1]);
+		}	
+		Moves foeMoves = findVictory(foeLastCell, false);
+		if (!(foeMoves.win == null)) {
+			return new MNKCell(foeMoves.win[0], foeMoves.win[1]);
 		}
-
+		if (!(mefistoMoves.twoWin == null)) {
+			return new MNKCell(mefistoMoves.twoWin[0], mefistoMoves.twoWin[1]);
+		}
+		if (!(foeMoves.twoWin == null)) {
+			return new MNKCell(foeMoves.twoWin[0], foeMoves.twoWin[1]);
+		}
 		int[] e = getQueueHead(FC);
-		int[] foeVictoryCell = findVictory(foeLastCell, false);
-		if (!(foeVictoryCell == null)) {
-			return new MNKCell(foeVictoryCell[0], foeVictoryCell[1]);
-		}
-
 		return new MNKCell(e[0], e[1]);
 	}
 
@@ -99,18 +103,10 @@ public class Mefisto implements MNKPlayer {
 		return q.peek();
 	}
 
-	private int[] findVictory(MNKCell lastCell, boolean isMefisto) {
+	private Moves findVictory(MNKCell lastCell, boolean isMefisto) {
 		Moves moves = new Moves();
 		checkAround(lastCell.i, lastCell.j, moves, isMefisto);
-		if (!(moves.win == null)) {
-			return moves.win;
-		}
-
-		if (!(moves.twoWin == null)) {
-			return moves.twoWin;
-		}
-
-		return null;
+		return moves;
 	}
 
 	private void checkAroundHorizontal(int i, int j, Moves moves, boolean isMefisto) {
