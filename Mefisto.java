@@ -4,23 +4,16 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.Random;
-import java.util.Stack;
 
-public class SaddamHussein implements MNKPlayer {
+public class Mefisto implements MNKPlayer {
 	private int m;
 	private int n;
 	private int k;
 	private int turn;
 	private MNKCellState[][] board;
-	private MNKCellState saddam;
+	private MNKCellState mefisto;
 	private MNKCellState foe;
-	// private final int MAX_DEPTH = 4;
-	// private final int ALPHA = -10000;
-	// private final int BETA = 10000;
-	//private final int WIN = 5000;
-	//private final int DEFEAT = -5000;
 	private int TIMEOUT;
 
 	private class Moves {
@@ -35,12 +28,12 @@ public class SaddamHussein implements MNKPlayer {
 	/**
 	 * Default empty constructor
 	 */
-	public SaddamHussein() {
+	public Mefisto() {
 	}
 
 	public void initPlayer(int M, int N, int K, boolean first, int timeout_in_secs) {
 		turn = 0;
-		saddam = first ? MNKCellState.P1 : MNKCellState.P2;
+		mefisto = first ? MNKCellState.P1 : MNKCellState.P2;
 		foe = first ? MNKCellState.P2 : MNKCellState.P1;
 		board = new MNKCellState[M][N];
 		this.m = M;
@@ -58,17 +51,17 @@ public class SaddamHussein implements MNKPlayer {
 		if (turn > 1) {
 			if (FC.length == 1)
 				return FC[0];
-			MNKCell saddamLastCell = MC[MC.length - 2];
+			MNKCell mefistoLastCell = MC[MC.length - 2];
 			MNKCell foeLastCell = MC[MC.length - 1];
-			board[saddamLastCell.i][saddamLastCell.j] = saddam;
+			board[mefistoLastCell.i][mefistoLastCell.j] = mefisto;
 			board[foeLastCell.i][foeLastCell.j] = foe;
-			MNKCell cell = getMove(FC, saddamLastCell, foeLastCell);
+			MNKCell cell = getMove(FC, mefistoLastCell, foeLastCell);
 			return cell;
 		}
 		// When it's my first turn
 		else {
-			if (MC.length > 0) { // if I'm the second saddam
-				MNKCell foeCell = MC[MC.length - 1]; // Recover the last move from MC
+			if (MC.length > 0) {
+				MNKCell foeCell = MC[MC.length - 1]; 
 				board[foeCell.i][foeCell.j] = foe;
 			}
 			int[] e = getQueueHead(FC);
@@ -77,10 +70,10 @@ public class SaddamHussein implements MNKPlayer {
 
 	}
 
-	private MNKCell getMove(MNKCell[] FC, MNKCell saddamLastCell, MNKCell foeLastCell) {
-		int[] saddamVictoryCell = findVictory(saddamLastCell, true);
-		if (!(saddamVictoryCell == null)) {
-			return new MNKCell(saddamVictoryCell[0], saddamVictoryCell[1]);
+	private MNKCell getMove(MNKCell[] FC, MNKCell mefistoLastCell, MNKCell foeLastCell) {
+		int[] mefistoVictoryCell = findVictory(mefistoLastCell, true);
+		if (!(mefistoVictoryCell == null)) {
+			return new MNKCell(mefistoVictoryCell[0], mefistoVictoryCell[1]);
 		}
 
 		int[] e = getQueueHead(FC);
@@ -106,9 +99,9 @@ public class SaddamHussein implements MNKPlayer {
 		return q.peek();
 	}
 
-	private int[] findVictory(MNKCell lastCell, boolean isSaddam) {
+	private int[] findVictory(MNKCell lastCell, boolean isMefisto) {
 		Moves moves = new Moves();
-		checkAround(lastCell.i, lastCell.j, moves, isSaddam);
+		checkAround(lastCell.i, lastCell.j, moves, isMefisto);
 		if (!(moves.win == null)) {
 			return moves.win;
 		}
@@ -120,8 +113,8 @@ public class SaddamHussein implements MNKPlayer {
 		return null;
 	}
 
-	private void checkAroundHorizontal(int i, int j, Moves moves, boolean isSaddam) {
-		MNKCellState player = isSaddam ? saddam : foe;
+	private void checkAroundHorizontal(int i, int j, Moves moves, boolean isMefisto) {
+		MNKCellState player = isMefisto ? mefisto : foe;
 		int length = 1, backExtra = 0, forwardExtra = 0, backCount, forwardCount;
 		boolean freeBack[] = { false, false }, freeForward[] = { false, false }, freeExtraForward = false,
 				freeExtraBack = false;
@@ -195,8 +188,8 @@ public class SaddamHussein implements MNKPlayer {
 
 	}
 
-	private void checkAroundVertical(int i, int j, Moves moves, boolean isSaddam) {
-		MNKCellState player = isSaddam ? saddam : foe;
+	private void checkAroundVertical(int i, int j, Moves moves, boolean isMefisto) {
+		MNKCellState player = isMefisto ? mefisto : foe;
 		int length = 1, backExtra = 0, forwardExtra = 0, backCount, forwardCount;
 		boolean freeBack[] = { false, false }, freeForward[] = { false, false }, freeExtraForward = false,
 				freeExtraBack = false;
@@ -268,8 +261,8 @@ public class SaddamHussein implements MNKPlayer {
 
 	}
 
-	private void checkAroundDiagonal(int i, int j, Moves moves, boolean isSaddam) {
-		MNKCellState player = isSaddam ? saddam : foe;
+	private void checkAroundDiagonal(int i, int j, Moves moves, boolean isMefisto) {
+		MNKCellState player = isMefisto ? mefisto : foe;
 		int length = 1, backExtra = 0, forwardExtra = 0, backCount, forwardCount;
 		boolean freeBack[] = { false, false }, freeForward[] = { false, false }, freeExtraForward = false,
 				freeExtraBack = false;
@@ -350,8 +343,8 @@ public class SaddamHussein implements MNKPlayer {
 
 	}
 
-	private void checkAroundAntiDiagonal(int i, int j, Moves moves, boolean isSaddam) {
-		MNKCellState player = isSaddam ? saddam : foe;
+	private void checkAroundAntiDiagonal(int i, int j, Moves moves, boolean isMefisto) {
+		MNKCellState player = isMefisto ? mefisto : foe;
 		int length = 1, backExtra = 0, forwardExtra = 0, backCount, forwardCount;
 		boolean freeBack[] = { false, false }, freeForward[] = { false, false }, freeExtraForward = false,
 				freeExtraBack = false;
@@ -435,14 +428,14 @@ public class SaddamHussein implements MNKPlayer {
 		}
 	}
 
-	private void checkAround(int i, int j, Moves moves, boolean isSaddam) {
-		checkAroundHorizontal(i, j, moves, isSaddam);
+	private void checkAround(int i, int j, Moves moves, boolean isMefisto) {
+		checkAroundHorizontal(i, j, moves, isMefisto);
 		if (moves.win == null) {
-			checkAroundVertical(i, j, moves, isSaddam);
+			checkAroundVertical(i, j, moves, isMefisto);
 			if (moves.win == null) {
-				checkAroundDiagonal(i, j, moves, isSaddam);
+				checkAroundDiagonal(i, j, moves, isMefisto);
 				if (moves.win == null) {
-					checkAroundAntiDiagonal(i, j, moves, isSaddam);
+					checkAroundAntiDiagonal(i, j, moves, isMefisto);
 				}
 			}
 		}
@@ -453,9 +446,9 @@ public class SaddamHussein implements MNKPlayer {
 		int extraH = 0, extraV = 0, extraD = 0, extraAD = 0;
 		int backCount, forwardCount;
 		// Horizontal
-		for (backCount = 1; j - backCount >= 0 && board[i][j - backCount] == saddam; backCount++)
+		for (backCount = 1; j - backCount >= 0 && board[i][j - backCount] == mefisto; backCount++)
 			lengthH++;
-		for (forwardCount = 1; j + forwardCount < this.n && board[i][j + forwardCount] == saddam; forwardCount++)
+		for (forwardCount = 1; j + forwardCount < this.n && board[i][j + forwardCount] == mefisto; forwardCount++)
 			lengthH++;
 		for (; j - backCount >= 0 && board[i][j - backCount] == MNKCellState.FREE
 				&& lengthH + extraH < this.k; backCount++)
@@ -465,10 +458,10 @@ public class SaddamHussein implements MNKPlayer {
 			extraH++;
 
 		// Vertical
-		for (backCount = 1; i - backCount >= 0 && board[i - backCount][j] == saddam; backCount++)
+		for (backCount = 1; i - backCount >= 0 && board[i - backCount][j] == mefisto; backCount++)
 			lengthV++;
 
-		for (forwardCount = 1; i + forwardCount < this.n && board[i + forwardCount][j] == saddam; forwardCount++)
+		for (forwardCount = 1; i + forwardCount < this.n && board[i + forwardCount][j] == mefisto; forwardCount++)
 			lengthV++;
 
 		for (; i - backCount >= 0 && board[i - backCount][j] == MNKCellState.FREE
@@ -480,11 +473,11 @@ public class SaddamHussein implements MNKPlayer {
 
 		// Diagonal
 		for (backCount = 1; j - backCount >= 0 && i - backCount >= 0
-				&& board[i - backCount][j - backCount] == saddam; backCount++)
+				&& board[i - backCount][j - backCount] == mefisto; backCount++)
 			lengthD++;
 
 		for (forwardCount = 1; j + forwardCount < this.n && i + forwardCount < this.n
-				&& board[i + forwardCount][j + forwardCount] == saddam; forwardCount++)
+				&& board[i + forwardCount][j + forwardCount] == mefisto; forwardCount++)
 			lengthD++;
 
 		for (; j - backCount >= 0 && i - backCount >= 0
@@ -498,11 +491,11 @@ public class SaddamHussein implements MNKPlayer {
 
 		// Antidiagonal
 		for (backCount = 1; j + backCount < this.n && i - backCount >= 0
-				&& board[i - backCount][j + backCount] == saddam; backCount++)
+				&& board[i - backCount][j + backCount] == mefisto; backCount++)
 			lengthAD++;
 
 		for (forwardCount = 1; j - forwardCount >= 0 && i + forwardCount < this.n
-				&& board[i + forwardCount][j - forwardCount] == saddam; forwardCount++)
+				&& board[i + forwardCount][j - forwardCount] == mefisto; forwardCount++)
 			lengthAD++;
 		for (; j + backCount < this.n && i - backCount >= 0
 				&& board[i - backCount][j + backCount] == MNKCellState.FREE
@@ -522,48 +515,7 @@ public class SaddamHussein implements MNKPlayer {
 	}
 
 	public String playerName() {
-		return "SaddamHussein";
-	}
-
-	/*
-	 * private int[] alphaBetaPruning(int[] father, int alpha, int beta,
-	 * PriorityQueue q) {
-	 * boolean isSaddam = currentDepth % 2 == 0;
-	 * currentDepth++;
-	 * Iterator<int[]> iterator = q.iterator();
-	 * while (iterator.hasNext()) {
-	 * int[] child = iterator.next();
-	 * board[child[0]][child[1]] = !isSaddam ? saddam : foe;
-	 * child = alphaBetaPruning(child, alpha, beta, getQueue(q, isSaddam, child));
-	 * board[child[0]][child[1]] = MNKCellState.FREE;
-	 * if (!isSaddam) {
-	 * if (currentDepth == 0 && child[2] > father[2]) {
-	 * return child;
-	 * }
-	 * father[2] = Math.max(father[2], child[2]);
-	 * alpha = Math.max(alpha, father[2]);
-	 * } else {
-	 * father[2] = Math.min(father[2], child[2]);
-	 * beta = Math.min(beta, father[2]);
-	 * }
-	 * if (beta <= alpha) {
-	 * 
-	 * break;
-	 * }
-	 * }
-	 * 
-	 * if (currentDepth == 1)
-	 * " has updated value " + father[2]);
-	 * currentDepth--;
-	 * return father;
-	 * }
-	 */
-	private void printMatrix(MNKCellState[][] matrix) {
-		Arrays.stream(matrix).forEach((row) -> {
-			System.out.print("[");
-			Arrays.stream(row).forEach((el) -> System.out.print(" " + el + " "));
-			System.out.println("]");
-		});
+		return "Mefisto";
 	}
 
 }
